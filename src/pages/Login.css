@@ -30,9 +30,16 @@
 }
 
 .login-logo-icon {
-  font-size: 3rem;
-  display: block;
-  margin-bottom: 0.5rem;
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  margin: 0 auto 12px;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
 }
 
 .login-titulo {
@@ -95,6 +102,25 @@
   cursor: not-allowed;
 }
 
+/* ── Input con icono ── */
+.login-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-input-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--color-texto-muted, #475569);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.login-input-wrap .login-input {
+  padding-left: 42px;
+}
+
 /* ── Error ── */
 .login-error {
   background: rgba(248, 113, 113, 0.1);
@@ -106,6 +132,11 @@
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
+  line-height: 0;
+}
+
+.login-error span {
+  line-height: 1.5;
 }
 
 /* ── Botón ── */

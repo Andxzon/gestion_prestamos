@@ -4,6 +4,7 @@ import { obtenerPrestamosPorCliente, eliminarPrestamo } from '../data/prestamoRe
 import { obtenerCuotasPorPrestamo } from '../data/cuotaRepository';
 import { obtenerPagosPorPrestamo } from '../data/pagoRepository';
 import { fechaHoyLocal } from '../logic/calculos';
+import { ArrowLeft, Trash2, X, AlertTriangle } from 'lucide-react';
 import './HistorialCliente.css';
 
 interface HistorialClienteProps {
@@ -133,7 +134,9 @@ const HistorialCliente: React.FC<HistorialClienteProps> = ({ cliente, onVolver }
     return (
       <div className="historial-container">
         <div className="historial-header">
-          <button className="btn-volver" onClick={onVolver}>← Volver a clientes</button>
+          <button className="btn-volver" onClick={onVolver}>
+            <ArrowLeft size={16} style={{ marginRight: '6px' }} /> Volver a clientes
+          </button>
         </div>
         <div className="estado-carga">
           <div className="spinner" />
@@ -147,10 +150,12 @@ const HistorialCliente: React.FC<HistorialClienteProps> = ({ cliente, onVolver }
     return (
       <div className="historial-container">
         <div className="historial-header">
-          <button className="btn-volver" onClick={onVolver}>← Volver a clientes</button>
+          <button className="btn-volver" onClick={onVolver}>
+            <ArrowLeft size={16} style={{ marginRight: '6px' }} /> Volver a clientes
+          </button>
         </div>
         <div className="estado-error">
-          <span>⚠️</span>
+          <div className="error-icon"><AlertTriangle size={22} /></div>
           <p>{error}</p>
         </div>
       </div>
@@ -161,7 +166,7 @@ const HistorialCliente: React.FC<HistorialClienteProps> = ({ cliente, onVolver }
     <div className="historial-container">
       <div className="historial-header">
         <button className="btn-volver" onClick={onVolver}>
-          ← Volver a clientes
+          <ArrowLeft size={16} style={{ marginRight: '6px' }} /> Volver a clientes
         </button>
         <div className="historial-titulo-grupo">
           <h2>Historial de: {cliente.nombre}</h2>
@@ -183,11 +188,12 @@ const HistorialCliente: React.FC<HistorialClienteProps> = ({ cliente, onVolver }
                     {data.prestamo.estado}
                   </span>
                   <button 
-                    className="btn-peligro" 
-                    style={{ marginLeft: '16px', padding: '4px 8px', fontSize: '12px' }}
+                    className="btn-peligro btn-peligro-sm" 
+                    style={{ marginLeft: '16px' }}
                     onClick={() => setPrestamoAEliminar(data.prestamo.id)}
+                    title="Eliminar préstamo"
                   >
-                    🗑️ Eliminar
+                    <Trash2 size={14} /> Eliminar
                   </button>
                 </div>
                 <div className="prestamo-fechas">
@@ -296,8 +302,10 @@ const HistorialCliente: React.FC<HistorialClienteProps> = ({ cliente, onVolver }
         <div className="overlay">
           <div className="modal-formulario" style={{ maxWidth: '400px' }}>
             <div className="modal-header">
-              <h2 className="modal-titulo">⚠️ Confirmar Eliminación</h2>
-              <button className="modal-cerrar" onClick={() => setPrestamoAEliminar(null)}>✕</button>
+              <h2 className="modal-titulo" style={{ color: '#ef4444' }}>
+                <AlertTriangle size={20} /> Confirmar Eliminación
+              </h2>
+              <button className="modal-cerrar" onClick={() => setPrestamoAEliminar(null)}><X size={18} /></button>
             </div>
             <div className="modal-cuerpo">
               <p>¿Estás seguro de que deseas eliminar este préstamo? Esta acción también eliminará todas sus cuotas y pagos asociados, y <strong>no se puede deshacer</strong>.</p>

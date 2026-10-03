@@ -3,6 +3,7 @@ import './Reportes.css';
 import { obtenerReporteClientes, obtenerProyeccion } from '../data/dashboardRepository';
 import type { ReporteClienteRow, Proyeccion } from '../data/dashboardRepository';
 import { fechaHoyLocal } from '../logic/calculos';
+import { Download, Printer, AlertTriangle, RefreshCw } from 'lucide-react';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
@@ -89,9 +90,9 @@ const Reportes: React.FC = () => {
     return (
       <div className="pagina-contenido">
         <div className="estado-error">
-          <span>⚠️</span>
+          <div className="error-icon"><AlertTriangle size={22} /></div>
           <p>{error}</p>
-          <button className="btn-primario" onClick={cargarReporte}>Reintentar</button>
+          <button className="btn-primario" onClick={cargarReporte}><RefreshCw size={15} /> Reintentar</button>
         </div>
       </div>
     );
@@ -117,10 +118,10 @@ const Reportes: React.FC = () => {
           
           <div className="acciones-grupo">
             <button className="btn-exportar" onClick={exportarCSV}>
-              <span>📥</span> Exportar CSV
+              <Download size={16} /> Exportar CSV
             </button>
-            <button className="btn-exportar" onClick={() => window.print()} style={{ backgroundColor: 'var(--primary-color)' }}>
-              <span>🖨️</span> Imprimir
+            <button className="btn-exportar" onClick={() => window.print()} style={{ backgroundColor: 'var(--color-primario)' }}>
+              <Printer size={16} /> Imprimir
             </button>
           </div>
         </div>

@@ -9,11 +9,13 @@ import Prestamos from './pages/Prestamos';
 import Cobros from './pages/Cobros';
 import Reportes from './pages/Reportes';
 import Login from './pages/Login';
+import { Menu } from 'lucide-react';
 import './App.css';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [seccion, setSeccion] = useState<SeccionActiva>('inicio');
+  const [menuAbierto, setMenuAbierto] = useState(false);
 
   // Escuchar cambios de sesión (login / logout)
   useEffect(() => {
@@ -26,6 +28,16 @@ const App: React.FC = () => {
     });
 
     return () => listener.subscription.unsubscribe();
+  }, []);
+
+  // Cerrar menú al cambiar a pantalla grande
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 769px)');
+    const handler = (e: MediaQueryListEvent) => {
+      if (e.matches) setMenuAbierto(false);
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, []);
 
   const handleCerrarSesion = async () => {
@@ -86,10 +98,25 @@ const App: React.FC = () => {
         onNavegar={setSeccion}
         onCerrarSesion={handleCerrarSesion}
         usuarioEmail={session.user.email ?? ''}
+        menuAbierto={menuAbierto}
+        onCerrarMenu={() => setMenuAbierto(false)}
       />
-      <main className="app-main" id="contenido-principal">
-        {renderPagina()}
-      </main>
+      <div className="app-content">
+        {/* Topbar móvil */}
+        <header className="app-topbar">
+          <button
+            className="app-hamburger"
+            onClick={() => setMenuAbierto(true)}
+            aria-label="Abrir menú"
+          >
+            <Menu size={22} />
+          </button>
+          <span className="app-topbar-titulo">PrestaMás</span>
+        </header>
+        <main className="app-main" id="contenido-principal">
+          {renderPagina()}
+        </main>
+      </div>
     </div>
   );
 };

@@ -3,7 +3,7 @@
    ============================================================ */
 
 /* ── Google Fonts ─────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 /* ── Reset y base ─────────────────────────────────────────── */
 *, *::before, *::after {
@@ -43,6 +43,10 @@
   --sombra-sm:  0 1px 3px rgba(0,0,0,0.3);
   --sombra-md:  0 4px 16px rgba(0,0,0,0.4);
   --sombra-lg:  0 8px 32px rgba(0,0,0,0.5);
+
+  /* Espaciado de página */
+  --page-padding-x: 48px;
+  --page-padding-y: 40px;
 }
 
 html, body, #root {
@@ -60,38 +64,24 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Layout principal ─────────────────────────────────────── */
-
-.app-layout {
-  display: flex;
-  min-height: 100vh;
-}
-
-.app-main {
-  flex: 1;
-  min-height: 100vh;
-  background: var(--color-bg);
-  overflow-y: auto;
-}
-
 /* ── Páginas (contenedores genéricos) ─────────────────────── */
 
 .pagina-contenido {
-  padding: 40px 48px;
+  padding: var(--page-padding-y) var(--page-padding-x);
   max-width: 1200px;
   animation: fadeIn 0.25s ease;
 }
 
 .pagina-titulo {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
   color: #ffffff;
   letter-spacing: -0.5px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .pagina-subtitulo {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--color-texto-suave);
   font-weight: 400;
 }
@@ -111,7 +101,7 @@ body {
 /* ── Scrollbar personalizada ──────────────────────────────── */
 
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -136,15 +126,23 @@ body {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  min-height: 200px;
+  min-height: 220px;
   color: var(--color-texto-suave);
   font-size: 1rem;
   text-align: center;
   padding: 2rem;
 }
 
-.estado-error span {
-  font-size: 2.5rem;
+.estado-error .error-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ef4444;
 }
 
 .estado-error p {
@@ -160,4 +158,31 @@ body {
   border-radius: 50%;
   animation: spin 0.75s linear infinite;
   flex-shrink: 0;
+}
+
+/* ── Responsive breakpoints globales ──────────────────────── */
+
+@media (max-width: 1024px) {
+  :root {
+    --page-padding-x: 32px;
+    --page-padding-y: 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --page-padding-x: 18px;
+    --page-padding-y: 24px;
+  }
+
+  .pagina-titulo {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --page-padding-x: 14px;
+    --page-padding-y: 20px;
+  }
 }

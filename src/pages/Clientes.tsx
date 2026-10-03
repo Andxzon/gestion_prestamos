@@ -8,6 +8,11 @@ import {
 } from '../data/clienteRepository';
 import { obtenerPrestamosPorCliente } from '../data/prestamoRepository';
 import HistorialCliente from '../components/HistorialCliente';
+import {
+  Plus, Search, X, Eye, Pencil, Trash2, UserPlus, User,
+  Phone, MapPin, AlertTriangle, RefreshCw, CheckCircle,
+  XCircle, ChevronRight,
+} from 'lucide-react';
 import './Clientes.css';
 
 // ── Formulario vacío ─────────────────────────────────────────
@@ -215,9 +220,9 @@ const Clientes: React.FC = () => {
     return (
       <div className="pagina-contenido clientes-pagina">
         <div className="estado-error">
-          <span>⚠️</span>
+          <div className="error-icon"><AlertTriangle size={22} /></div>
           <p>{error}</p>
-          <button className="btn-primario" onClick={cargarClientes}>Reintentar</button>
+          <button className="btn-primario" onClick={cargarClientes}><RefreshCw size={15} /> Reintentar</button>
         </div>
       </div>
     );
@@ -232,13 +237,13 @@ const Clientes: React.FC = () => {
           <p className="pagina-subtitulo">{clientes.length} cliente{clientes.length !== 1 ? 's' : ''} registrado{clientes.length !== 1 ? 's' : ''}</p>
         </div>
         <button id="btn-nuevo-cliente" className="btn-primario" onClick={abrirNuevo}>
-          <span className="btn-icono">＋</span> Nuevo cliente
+          <Plus size={17} /> Nuevo cliente
         </button>
       </div>
 
       {/* Buscador */}
       <div className="clientes-buscador-wrap">
-        <span className="buscador-icono">🔍</span>
+        <Search size={16} className="buscador-icono" />
         <input
           id="buscador-clientes"
           type="text"
@@ -249,14 +254,16 @@ const Clientes: React.FC = () => {
           aria-label="Buscar clientes por nombre"
         />
         {busqueda && (
-          <button className="buscador-limpiar" onClick={() => setBusqueda('')} aria-label="Limpiar búsqueda">✕</button>
+          <button className="buscador-limpiar" onClick={() => setBusqueda('')} aria-label="Limpiar búsqueda">
+            <X size={14} />
+          </button>
         )}
       </div>
 
       {/* Lista */}
       {clientesFiltrados.length === 0 ? (
         <div className="clientes-vacio">
-          <span className="clientes-vacio-icono">👤</span>
+          <span className="clientes-vacio-icono"><User size={48} strokeWidth={1} /></span>
           <p>{busqueda ? 'No se encontraron clientes con ese nombre.' : 'Aún no hay clientes registrados.'}</p>
         </div>
       ) : (
@@ -294,7 +301,9 @@ const Clientes: React.FC = () => {
       {confirmEliminar && (
         <div className="overlay" role="dialog" aria-modal="true">
           <div className="modal-confirm">
-            <div className="modal-confirm-icono">⚠️</div>
+            <div className="modal-confirm-icono">
+            <AlertTriangle size={32} strokeWidth={1.5} />
+          </div>
             <h2 className="modal-confirm-titulo">¿Eliminar cliente?</h2>
             <p className="modal-confirm-texto">
               Estás a punto de eliminar a <strong>{confirmEliminar.nombre}</strong>. Esta acción no se puede deshacer.
@@ -310,7 +319,7 @@ const Clientes: React.FC = () => {
       {/* Toast */}
       {toast && (
         <div className={`toast toast--${toast.tipo}`} role="alert">
-          <span>{toast.tipo === 'exito' ? '✓' : '✕'}</span>
+          <span className="toast-icon">{toast.tipo === 'exito' ? <CheckCircle size={17} /> : <XCircle size={17} />}</span>
           {toast.mensaje}
         </div>
       )}
@@ -340,9 +349,9 @@ const ClienteCard: React.FC<ClienteCardProps> = ({ cliente, onEditar, onEliminar
       <div className="cliente-info">
         <span className="cliente-nombre">{cliente.nombre}</span>
         <span className="cliente-detalle">
-          <span className="cliente-detalle-item">📞 {cliente.telefono}</span>
+          <span className="cliente-detalle-item"><Phone size={12} strokeWidth={2} /> {cliente.telefono}</span>
           <span className="cliente-detalle-sep">·</span>
-          <span className="cliente-detalle-item">📍 {cliente.direccion}</span>
+          <span className="cliente-detalle-item"><MapPin size={12} strokeWidth={2} /> {cliente.direccion}</span>
         </span>
         {cliente.referencias.length > 0 && (
           <span className="cliente-refs">
@@ -357,7 +366,7 @@ const ClienteCard: React.FC<ClienteCardProps> = ({ cliente, onEditar, onEliminar
           title="Ver historial de préstamos"
           aria-label={`Ver historial de ${cliente.nombre}`}
         >
-          👁️
+          <Eye size={16} strokeWidth={1.8} />
         </button>
         <button
           id={`btn-editar-${cliente.id}`}
@@ -366,7 +375,7 @@ const ClienteCard: React.FC<ClienteCardProps> = ({ cliente, onEditar, onEliminar
           title="Editar cliente"
           aria-label={`Editar ${cliente.nombre}`}
         >
-          ✏️
+          <Pencil size={15} strokeWidth={1.8} />
         </button>
         <button
           id={`btn-eliminar-${cliente.id}`}
@@ -375,7 +384,7 @@ const ClienteCard: React.FC<ClienteCardProps> = ({ cliente, onEditar, onEliminar
           title="Eliminar cliente"
           aria-label={`Eliminar ${cliente.nombre}`}
         >
-          🗑️
+          <Trash2 size={15} strokeWidth={1.8} />
         </button>
       </div>
     </li>
@@ -410,9 +419,9 @@ const ModalFormulario: React.FC<ModalFormularioProps> = ({
         {/* Cabecera */}
         <div className="modal-header">
           <h2 id="modal-titulo" className="modal-titulo">
-            {clienteEditando ? '✏️ Editar cliente' : '👤 Nuevo cliente'}
+            {clienteEditando ? <><Pencil size={17} /> Editar cliente</> : <><UserPlus size={17} /> Nuevo cliente</>}
           </h2>
-          <button className="modal-cerrar" onClick={onCerrar} aria-label="Cerrar" disabled={guardando}>✕</button>
+          <button className="modal-cerrar" onClick={onCerrar} aria-label="Cerrar" disabled={guardando}><X size={18} /></button>
         </div>
 
         <div className="modal-cuerpo">
@@ -552,7 +561,7 @@ const ModalFormulario: React.FC<ModalFormularioProps> = ({
               type="button"
               disabled={guardando}
             >
-              ＋ Agregar referencia
+              <Plus size={15} /> Agregar referencia
             </button>
           </fieldset>
         </div>

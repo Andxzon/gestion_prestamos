@@ -3,6 +3,11 @@ import type { Prestamo, Cliente, TipoInteres, TipoComision } from '../types';
 import { obtenerPrestamos, guardarPrestamo, obtenerPrestamoActivo, eliminarPrestamo } from '../data/prestamoRepository';
 import { obtenerClientes } from '../data/clienteRepository';
 import { calcularResumenPrestamo, generarCuotasBase, formatearMoneda, formatearFecha, fechaHoyLocal } from '../logic/calculos';
+import {
+  Banknote, Plus, Calendar, Clock, TrendingUp, Trash2,
+  X, AlertTriangle, CheckCircle, XCircle, RefreshCw,
+  Info
+} from 'lucide-react';
 import './Prestamos.css';
 
 // ── Valores por defecto ──────────────────────────────────────
@@ -206,9 +211,9 @@ const Prestamos: React.FC = () => {
     return (
       <div className="pagina-contenido">
         <div className="estado-error">
-          <span>⚠️</span>
+          <div className="error-icon"><AlertTriangle size={22} /></div>
           <p>{error}</p>
-          <button className="btn-primario" onClick={cargarDatos}>Reintentar</button>
+          <button className="btn-primario" onClick={cargarDatos}><RefreshCw size={15} /> Reintentar</button>
         </div>
       </div>
     );
@@ -222,13 +227,13 @@ const Prestamos: React.FC = () => {
           <p className="pagina-subtitulo">Gestiona los créditos activos e historial.</p>
         </div>
         <button className="btn-primario" onClick={abrirNuevo}>
-          <span className="btn-icono">＋</span> Nuevo préstamo
+          <Plus size={17} /> Nuevo préstamo
         </button>
       </div>
 
       {prestamos.length === 0 ? (
         <div className="clientes-vacio">
-           <span className="clientes-vacio-icono">💰</span>
+           <span className="clientes-vacio-icono"><Banknote size={48} strokeWidth={1} /></span>
            <p>No hay préstamos registrados.</p>
         </div>
       ) : (
@@ -238,20 +243,20 @@ const Prestamos: React.FC = () => {
               <div className="prestamo-info-principal">
                 <span className="prestamo-cliente">{getNombreCliente(p.clienteId)}</span>
                 <div className="prestamo-detalles">
-                   <span>📅 Inicio: {formatearFecha(p.fechaInicio)}</span>
-                   <span>⏱️ Plazo: {p.plazoEnDias} días</span>
-                   <span>📈 {(p.tasaMensual * 100).toFixed(1)}% {p.tipoInteres}</span>
+                   <span className="prestamo-detalle-item"><Calendar size={13} strokeWidth={2} /> {formatearFecha(p.fechaInicio)}</span>
+                   <span className="prestamo-detalle-item"><Clock size={13} strokeWidth={2} /> {p.plazoEnDias} días</span>
+                   <span className="prestamo-detalle-item"><TrendingUp size={13} strokeWidth={2} /> {(p.tasaMensual * 100).toFixed(1)}% {p.tipoInteres}</span>
                 </div>
               </div>
               <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
                  <div className="prestamo-monto">{formatearMoneda(p.monto)}</div>
                  <span className={`estado-badge ${p.estado}`}>{p.estado}</span>
                  <button 
-                   className="btn-peligro" 
-                   style={{ padding: '4px 8px', fontSize: '12px', marginTop: 'auto' }}
+                   className="btn-peligro btn-peligro-sm" 
                    onClick={() => setPrestamoAEliminar(p.id)}
+                   title="Eliminar préstamo"
                  >
-                   🗑️ Eliminar
+                   <Trash2 size={14} /> Eliminar
                  </button>
               </div>
             </div>
@@ -264,8 +269,10 @@ const Prestamos: React.FC = () => {
         <div className="overlay">
           <div className="modal-formulario" style={{ maxWidth: '800px' }}>
             <div className="modal-header">
-              <h2 className="modal-titulo">💰 Nuevo Préstamo</h2>
-              <button className="modal-cerrar" onClick={cerrarModal}>✕</button>
+              <h2 className="modal-titulo">
+                <Banknote size={20} /> Nuevo Préstamo
+              </h2>
+              <button className="modal-cerrar" onClick={cerrarModal}><X size={18} /></button>
             </div>
 
             <div className="modal-cuerpo" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
@@ -408,8 +415,8 @@ const Prestamos: React.FC = () => {
       )}
 
       {toast && (
-        <div className={`toast toast--${toast.tipo}`}>
-          <span>{toast.tipo === 'exito' ? '✓' : '✕'}</span>
+        <div className={`toast toast--${toast.tipo}`} role="alert">
+          <span className="toast-icon">{toast.tipo === 'exito' ? <CheckCircle size={17} /> : <XCircle size={17} />}</span>
           {toast.mensaje}
         </div>
       )}
@@ -419,8 +426,10 @@ const Prestamos: React.FC = () => {
         <div className="overlay">
           <div className="modal-formulario" style={{ maxWidth: '400px' }}>
             <div className="modal-header">
-              <h2 className="modal-titulo">⚠️ Confirmar Eliminación</h2>
-              <button className="modal-cerrar" onClick={() => setPrestamoAEliminar(null)}>✕</button>
+              <h2 className="modal-titulo" style={{ color: '#ef4444' }}>
+                <AlertTriangle size={20} /> Confirmar Eliminación
+              </h2>
+              <button className="modal-cerrar" onClick={() => setPrestamoAEliminar(null)}><X size={18} /></button>
             </div>
             <div className="modal-cuerpo">
               <p>¿Estás seguro de que deseas eliminar este préstamo? Esta acción también eliminará todas sus cuotas y pagos asociados, y <strong>no se puede deshacer</strong>.</p>

@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { Briefcase, AlertTriangle, Mail, Lock, LogIn } from 'lucide-react';
 import './Login.css';
 
 const Login: React.FC = () => {
@@ -56,7 +57,9 @@ const Login: React.FC = () => {
     <div className="login-page">
       <div className="login-card">
         <div className="login-logo">
-          <span className="login-logo-icon">💼</span>
+          <div className="login-logo-icon">
+            <Briefcase size={28} strokeWidth={1.8} />
+          </div>
           <h1 className="login-titulo">PrestaMás</h1>
           <p className="login-subtitulo">Gestión de préstamos</p>
         </div>
@@ -66,38 +69,45 @@ const Login: React.FC = () => {
             <label htmlFor="login-correo" className="login-label">
               Correo electrónico
             </label>
-            <input
-              id="login-correo"
-              type="email"
-              className="login-input"
-              placeholder="usuario@ejemplo.com"
-              value={correo}
-              onChange={(e) => setCorreo(e.target.value)}
-              autoComplete="email"
-              autoFocus
-              disabled={cargando}
-            />
+            <div className="login-input-wrap">
+              <Mail size={16} className="login-input-icon" />
+              <input
+                id="login-correo"
+                type="email"
+                className="login-input"
+                placeholder="usuario@ejemplo.com"
+                value={correo}
+                onChange={(e) => setCorreo(e.target.value)}
+                autoComplete="email"
+                autoFocus
+                disabled={cargando}
+              />
+            </div>
           </div>
 
           <div className="login-campo">
             <label htmlFor="login-contrasena" className="login-label">
               Contraseña
             </label>
-            <input
-              id="login-contrasena"
-              type="password"
-              className="login-input"
-              placeholder="••••••••"
-              value={contrasena}
-              onChange={(e) => setContrasena(e.target.value)}
-              autoComplete="current-password"
-              disabled={cargando}
-            />
+            <div className="login-input-wrap">
+              <Lock size={16} className="login-input-icon" />
+              <input
+                id="login-contrasena"
+                type="password"
+                className="login-input"
+                placeholder="••••••••"
+                value={contrasena}
+                onChange={(e) => setContrasena(e.target.value)}
+                autoComplete="current-password"
+                disabled={cargando}
+              />
+            </div>
           </div>
 
           {error && (
             <div className="login-error" role="alert">
-              <span>⚠️</span> {error}
+              <AlertTriangle size={16} />
+              <span>{error}</span>
             </div>
           )}
 
@@ -112,7 +122,7 @@ const Login: React.FC = () => {
                 <span className="login-spinner" /> Ingresando…
               </>
             ) : (
-              'Ingresar'
+              <><LogIn size={17} /> Ingresar</>
             )}
           </button>
         </form>

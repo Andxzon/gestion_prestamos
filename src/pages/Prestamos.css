@@ -141,3 +141,23 @@
 .form-select:focus {
   border-color: var(--color-primario);
 }
+
+.prestamo-detalle-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 0;
+}
+
+.prestamo-detalle-item span {
+  line-height: 1.5;
+}
+
+.btn-peligro-sm {
+  padding: 6px 10px;
+  font-size: 12px;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

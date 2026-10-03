@@ -6,6 +6,10 @@ import { obtenerCuotasPorPrestamo } from '../data/cuotaRepository';
 import { registrarPago } from '../data/pagoRepository';
 import type { DatosRegistroPago } from '../data/pagoRepository';
 import { formatearMoneda, formatearFecha, diasDeAtraso, calcularMora, distribuirPago, fechaHoyLocal } from '../logic/calculos';
+import {
+  AlertTriangle, RefreshCw, PartyPopper, Phone,
+  Calendar, Hash, X, CheckCircle, XCircle, CreditCard
+} from 'lucide-react';
 import './Cobros.css';
 
 // ── Tipos y Estructura para la vista ───────────────────────
@@ -209,9 +213,9 @@ const Cobros: React.FC = () => {
     return (
       <div className="pagina-contenido">
         <div className="estado-error">
-          <span>⚠️</span>
+          <div className="error-icon"><AlertTriangle size={22} /></div>
           <p>{error}</p>
-          <button className="btn-primario" onClick={recargarDatos}>Reintentar</button>
+          <button className="btn-primario" onClick={recargarDatos}><RefreshCw size={15} /> Reintentar</button>
         </div>
       </div>
     );
@@ -228,7 +232,7 @@ const Cobros: React.FC = () => {
 
       {cobros.length === 0 ? (
         <div className="clientes-vacio">
-           <span className="clientes-vacio-icono">🎉</span>
+           <span className="clientes-vacio-icono"><PartyPopper size={48} strokeWidth={1} /></span>
            <p>No hay préstamos activos pendientes de cobro.</p>
         </div>
       ) : (
@@ -244,11 +248,11 @@ const Cobros: React.FC = () => {
                 </div>
                 
                 <div className="cobro-detalles">
-                  <span>📱 {cobro.cliente.telefono}</span>
+                  <span className="prestamo-detalle-item"><Phone size={13} strokeWidth={2} /> {cobro.cliente.telefono}</span>
                   {cobro.cuotaActual ? (
                     <>
-                      <span>📅 Vence: {formatearFecha(cobro.cuotaActual.fechaVencimiento)}</span>
-                      <span>🔢 Cuota {cobro.cuotaActual.numeroCuota}</span>
+                      <span className="prestamo-detalle-item"><Calendar size={13} strokeWidth={2} /> Vence: {formatearFecha(cobro.cuotaActual.fechaVencimiento)}</span>
+                      <span className="prestamo-detalle-item"><Hash size={13} strokeWidth={2} /> Cuota {cobro.cuotaActual.numeroCuota}</span>
                     </>
                   ) : (
                     <span>Todas las cuotas generadas están pagadas.</span>
@@ -269,7 +273,7 @@ const Cobros: React.FC = () => {
                   onClick={() => abrirModalPago(cobro)}
                   disabled={!cobro.cuotaActual}
                 >
-                  Registrar Pago
+                  <CreditCard size={15} /> Registrar Pago
                 </button>
               </div>
             </div>
@@ -283,7 +287,7 @@ const Cobros: React.FC = () => {
           <div className="modal-formulario" style={{ maxWidth: '400px' }}>
             <div className="modal-header">
               <h2 className="modal-titulo">Registrar Pago</h2>
-              <button className="modal-cerrar" onClick={cerrarModal} disabled={procesandoPago}>✕</button>
+              <button className="modal-cerrar" onClick={cerrarModal} disabled={procesandoPago}><X size={18} /></button>
             </div>
 
             <div className="modal-cuerpo">
@@ -352,8 +356,8 @@ const Cobros: React.FC = () => {
       )}
 
       {toast && (
-        <div className={`toast toast--${toast.tipo}`}>
-          <span>{toast.tipo === 'exito' ? '✓' : '✕'}</span>
+        <div className={`toast toast--${toast.tipo}`} role="alert">
+          <span className="toast-icon">{toast.tipo === 'exito' ? <CheckCircle size={17} /> : <XCircle size={17} />}</span>
           {toast.mensaje}
         </div>
       )}
