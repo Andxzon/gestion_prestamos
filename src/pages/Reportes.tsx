@@ -54,9 +54,10 @@ const Reportes: React.FC = () => {
 
   const exportarCSV = () => {
     if (reporteClientes.length === 0) return;
-    const cabeceras = ['Nombre', 'Dirección', 'Teléfono', 'Saldo Pendiente', 'Cuotas Atrasadas', 'Estado', 'Último Pago'];
+    const cabeceras = ['Nombre', 'Dirección', 'Teléfono', 'Valor Préstamos', 'Intereses Pagados', 'Intereses Mora', 'Total Abonado', 'Saldo Pendiente', 'Cuotas Atrasadas', 'Estado', 'Último Pago'];
     const filas = reporteClientes.map(r => [
       r.nombre, r.direccion, r.telefono,
+      r.valorPrestamo, r.interesesPagados, r.interesesMora, r.totalAbonado,
       r.saldoPendiente, r.cuotasAtrasadas,
       r.estadoPrestamo, r.fechaUltimoPago
     ]);
@@ -142,22 +143,27 @@ const Reportes: React.FC = () => {
             <thead>
               <tr>
                 <th>Cliente</th>
-                <th>Dirección / Teléfono</th>
+                <th>Valor Préstamo</th>
+                <th>Intereses Pagados</th>
+                <th>Mora Pagada</th>
+                <th>Total Abonado</th>
                 <th>Saldo Pendiente</th>
                 <th>Atrasos</th>
-                <th>Estado Préstamo</th>
-                <th>Último Pago</th>
+                <th>Estado</th>
               </tr>
             </thead>
             <tbody>
               {reporteClientes.map(fila => (
                 <tr key={fila.id}>
-                  <td><strong>{fila.nombre}</strong></td>
                   <td>
-                    <div>{fila.direccion}</div>
+                    <div><strong>{fila.nombre}</strong></div>
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{fila.telefono}</div>
                   </td>
-                  <td>{formatCurrency(fila.saldoPendiente)}</td>
+                  <td>{formatCurrency(fila.valorPrestamo)}</td>
+                  <td>{formatCurrency(fila.interesesPagados)}</td>
+                  <td>{formatCurrency(fila.interesesMora)}</td>
+                  <td style={{ color: 'var(--color-verde)' }}>{formatCurrency(fila.totalAbonado)}</td>
+                  <td style={{ fontWeight: '600' }}>{formatCurrency(fila.saldoPendiente)}</td>
                   <td className={fila.cuotasAtrasadas > 0 ? 'texto-peligro' : ''}>
                     {fila.cuotasAtrasadas} cuotas
                   </td>
@@ -166,7 +172,6 @@ const Reportes: React.FC = () => {
                       {fila.estadoPrestamo}
                     </span>
                   </td>
-                  <td>{fila.fechaUltimoPago !== 'N/A' ? fila.fechaUltimoPago : 'Sin pagos'}</td>
                 </tr>
               ))}
             </tbody>

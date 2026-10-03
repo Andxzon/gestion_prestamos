@@ -32,6 +32,10 @@ export interface ReporteClienteRow {
   nombre: string;
   direccion: string;
   telefono: string;
+  valorPrestamo: number;
+  interesesPagados: number;
+  interesesMora: number;
+  totalAbonado: number;
   saldoPendiente: number;
   cuotasAtrasadas: number;
   estadoPrestamo: string;
@@ -277,10 +281,10 @@ export async function obtenerReporteClientes(): Promise<ReporteClienteRow[]> {
     { data: pagos, error: errPg },
   ] = await Promise.all([
     supabase.from('cliente').select('id_cliente, nombre, direccion, telefono'),
-    supabase.from('prestamo').select('id_prestamo, id_cliente, estado, fecha_inicio'),
+    supabase.from('prestamo').select('id_prestamo, id_cliente, estado, fecha_inicio, monto'),
     supabase.from('v_saldo_prestamo').select('id_prestamo, id_cliente, saldo_pendiente'),
     supabase.from('v_cuota_atrasada').select('id_prestamo'),
-    supabase.from('pago').select('id_prestamo, fecha').order('fecha', { ascending: false }),
+    supabase.from('pago').select('id_prestamo, fecha, a_capital, a_interes, a_mora').order('fecha', { ascending: false }),
   ]);
 
   if (errC) throw new Error(`Error clientes: ${errC.message}`);
@@ -304,12 +308,16 @@ export async function obtenerReporteClientes(): Promise<ReporteClienteRow[]> {
     }
   }
 
-  const ultimoPagoPorPrestamo = new Map<string, string>();
+  const pagosPorPrestamo = new Map<string, { ultimo: string; cap: number; int: number; mora: number }>();
   for (const pg of pagos ?? []) {
     const pid = (pg as any).id_prestamo as string;
-    if (!ultimoPagoPorPrestamo.has(pid)) {
-      ultimoPagoPorPrestamo.set(pid, (pg as any).fecha as string);
+    if (!pagosPorPrestamo.has(pid)) {
+      pagosPorPrestamo.set(pid, { ultimo: (pg as any).fecha, cap: 0, int: 0, mora: 0 });
     }
+    const stat = pagosPorPrestamo.get(pid)!;
+    stat.cap += (pg as any).a_capital ?? 0;
+    stat.int += (pg as any).a_interes ?? 0;
+    stat.mora += (pg as any).a_mora ?? 0;
   }
 
   return (clientes ?? []).map((cli: any) => {
@@ -318,15 +326,29 @@ export async function obtenerReporteClientes(): Promise<ReporteClienteRow[]> {
       b.fecha_inicio.localeCompare(a.fecha_inicio)
     )[0];
 
+    const valorPrestamo = prestamosCliente.reduce((sum: number, p: any) => sum + (p.monto ?? 0), 0);
     const saldoPendiente = prestamosCliente.reduce(
       (sum: number, p: any) => sum + (saldoPorPrestamo.get(p.id_prestamo) ?? 0),
       0
     );
 
+    let interesesPagados = 0;
+    let interesesMora = 0;
+    let totalAbonado = 0;
+    
+    prestamosCliente.forEach((p: any) => {
+      const stats = pagosPorPrestamo.get(p.id_prestamo);
+      if (stats) {
+        interesesPagados += stats.int;
+        interesesMora += stats.mora;
+        totalAbonado += stats.cap + stats.int + stats.mora;
+      }
+    });
+
     const cuotasAtrasadas = atrasadasPorCliente.get(cli.id_cliente) ?? 0;
 
     const ultimoPago = prestamosCliente
-      .map((p: any) => ultimoPagoPorPrestamo.get(p.id_prestamo))
+      .map((p: any) => pagosPorPrestamo.get(p.id_prestamo)?.ultimo)
       .filter(Boolean)
       .sort()
       .reverse()[0] ?? 'N/A';
@@ -336,6 +358,10 @@ export async function obtenerReporteClientes(): Promise<ReporteClienteRow[]> {
       nombre: cli.nombre as string,
       direccion: cli.direccion as string,
       telefono: cli.telefono as string,
+      valorPrestamo,
+      interesesPagados,
+      interesesMora,
+      totalAbonado,
       saldoPendiente,
       cuotasAtrasadas,
       estadoPrestamo: prestamoActivo ? prestamoActivo.estado : 'Sin préstamos',
