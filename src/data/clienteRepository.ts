@@ -1,11 +1,14 @@
 // ============================================================
-// REPOSITORIO DE CLIENTES — Supabase
+// REPOSITORIO DE CLIENTES — Supabase + Offline Protection
 // Única puerta de entrada para leer/escribir clientes.
+// Todas las escrituras pasan por withOfflineProtection para
+// garantizar que los datos NUNCA se pierdan.
 // ============================================================
 
 import { supabase } from '../lib/supabaseClient';
 import type { Cliente, Referencia } from '../types';
 import { fechaHoyLocal } from '../logic/calculos';
+import { withOfflineProtection } from '../lib/offlineWrapper';
 
 // ── Helpers de mapeo ──────────────────────────────────────────
 
@@ -80,80 +83,120 @@ export async function obtenerClientePorId(id: string): Promise<Cliente | undefin
 
 // ── Guardar (insertar) ────────────────────────────────────────
 
-export async function guardarCliente(datos: Omit<Cliente, 'id' | 'creadoEn'>): Promise<Cliente> {
-  const { data: cliData, error: errC } = await supabase.from('cliente').insert({
-    nombre: datos.nombre,
-    telefono: datos.telefono,
-    direccion: datos.direccion,
-    documento: datos.documento ?? null,
-  }).select().single();
+export async function guardarCliente(
+  datos: Omit<Cliente, 'id' | 'creadoEn'>,
+  _offlineId?: string,
+): Promise<Cliente> {
+  // Pre-generar UUID para idempotencia en replays
+  const clienteId = _offlineId || crypto.randomUUID();
 
-  if (errC) throw new Error(`Error al guardar cliente: ${errC.message}`);
+  return withOfflineProtection({
+    operationKey: 'guardarCliente',
+    operationType: 'insert',
+    payload: { ...datos, _offlineId: clienteId },
 
-  const id = cliData.id_cliente as string;
+    execute: async () => {
+      const { data: cliData, error: errC } = await supabase.from('cliente').insert({
+        id_cliente: clienteId,
+        nombre: datos.nombre,
+        telefono: datos.telefono,
+        direccion: datos.direccion,
+        documento: datos.documento ?? null,
+      }).select().single();
 
-  if (datos.referencias.length > 0) {
-    const { error: errR } = await supabase.from('referencia').insert(
-      datos.referencias.map((r) => ({
-        id_cliente: id,
-        nombre: r.nombre,
-        telefono: r.telefono,
-        parentesco: r.parentesco,
-      }))
-    );
-    if (errR) {
-      await supabase.from('cliente').delete().eq('id_cliente', id);
-      throw new Error(`Error al guardar referencias: ${errR.message}`);
-    }
-  }
+      if (errC) throw new Error(`Error al guardar cliente: ${errC.message}`);
 
-  return { ...datos, id, creadoEn: fechaHoyLocal() };
+      const id = cliData.id_cliente as string;
+
+      if (datos.referencias.length > 0) {
+        const { error: errR } = await supabase.from('referencia').insert(
+          datos.referencias.map((r) => ({
+            id_cliente: id,
+            nombre: r.nombre,
+            telefono: r.telefono,
+            parentesco: r.parentesco,
+          }))
+        );
+        if (errR) {
+          await supabase.from('cliente').delete().eq('id_cliente', id);
+          throw new Error(`Error al guardar referencias: ${errR.message}`);
+        }
+      }
+
+      return { ...datos, id, creadoEn: fechaHoyLocal() };
+    },
+
+    getFallbackResult: () => ({
+      ...datos,
+      id: clienteId,
+      creadoEn: fechaHoyLocal(),
+    }),
+  });
 }
 
 // ── Actualizar ────────────────────────────────────────────────
 
 export async function actualizarCliente(cliente: Cliente): Promise<Cliente> {
-  const { error: errC } = await supabase
-    .from('cliente')
-    .update({
-      nombre: cliente.nombre,
-      telefono: cliente.telefono,
-      direccion: cliente.direccion,
-      documento: cliente.documento ?? null,
-    })
-    .eq('id_cliente', cliente.id);
+  return withOfflineProtection({
+    operationKey: 'actualizarCliente',
+    operationType: 'update',
+    payload: cliente,
+    lww: { table: 'cliente', keyField: 'id_cliente', keyValue: cliente.id },
 
-  if (errC) throw new Error(`Error al actualizar cliente: ${errC.message}`);
+    execute: async () => {
+      const { error: errC } = await supabase
+        .from('cliente')
+        .update({
+          nombre: cliente.nombre,
+          telefono: cliente.telefono,
+          direccion: cliente.direccion,
+          documento: cliente.documento ?? null,
+        })
+        .eq('id_cliente', cliente.id);
 
-  // Reemplazar referencias: borrar las antiguas y reinsertar
-  const { error: errD } = await supabase
-    .from('referencia')
-    .delete()
-    .eq('id_cliente', cliente.id);
+      if (errC) throw new Error(`Error al actualizar cliente: ${errC.message}`);
 
-  if (errD) throw new Error(`Error al limpiar referencias: ${errD.message}`);
+      // Reemplazar referencias: borrar las antiguas y reinsertar
+      const { error: errD } = await supabase
+        .from('referencia')
+        .delete()
+        .eq('id_cliente', cliente.id);
 
-  if (cliente.referencias.length > 0) {
-    const { error: errR } = await supabase.from('referencia').insert(
-      cliente.referencias.map((r) => ({
-        id_cliente: cliente.id,
-        nombre: r.nombre,
-        telefono: r.telefono,
-        parentesco: r.parentesco,
-      }))
-    );
-    if (errR) throw new Error(`Error al actualizar referencias: ${errR.message}`);
-  }
+      if (errD) throw new Error(`Error al limpiar referencias: ${errD.message}`);
 
-  return cliente;
+      if (cliente.referencias.length > 0) {
+        const { error: errR } = await supabase.from('referencia').insert(
+          cliente.referencias.map((r) => ({
+            id_cliente: cliente.id,
+            nombre: r.nombre,
+            telefono: r.telefono,
+            parentesco: r.parentesco,
+          }))
+        );
+        if (errR) throw new Error(`Error al actualizar referencias: ${errR.message}`);
+      }
+
+      return cliente;
+    },
+
+    getFallbackResult: () => cliente,
+  });
 }
 
 // ── Eliminar ──────────────────────────────────────────────────
 
 export async function eliminarCliente(id: string): Promise<void> {
-  // Las referencias se eliminan por cascade en Supabase si está configurado,
-  // si no, las eliminamos explícitamente primero.
-  await supabase.from('referencia').delete().eq('id_cliente', id);
-  const { error } = await supabase.from('cliente').delete().eq('id_cliente', id);
-  if (error) throw new Error(`Error al eliminar cliente: ${error.message}`);
+  return withOfflineProtection({
+    operationKey: 'eliminarCliente',
+    operationType: 'delete',
+    payload: { id },
+
+    execute: async () => {
+      // Las referencias se eliminan por cascade en Supabase si está configurado,
+      // si no, las eliminamos explícitamente primero.
+      await supabase.from('referencia').delete().eq('id_cliente', id);
+      const { error } = await supabase.from('cliente').delete().eq('id_cliente', id);
+      if (error) throw new Error(`Error al eliminar cliente: ${error.message}`);
+    },
+  });
 }

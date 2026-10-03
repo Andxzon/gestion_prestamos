@@ -1,5 +1,5 @@
 // ============================================================
-// REPOSITORIO DE PAGOS — Supabase
+// REPOSITORIO DE PAGOS — Supabase + Offline Protection
 // registrarPago: inserta pago, actualiza cuota, y si todas
 // las cuotas quedan pagadas, marca el préstamo como pagado.
 // Si algún paso falla, intenta deshacer lo hecho.
@@ -7,6 +7,7 @@
 
 import { supabase } from '../lib/supabaseClient';
 import type { Pago } from '../types';
+import { withOfflineProtection } from '../lib/offlineWrapper';
 
 // ── Helpers de mapeo ──────────────────────────────────────────
 
@@ -54,152 +55,174 @@ export interface DatosRegistroPago {
   nota?: string;
 }
 
-export async function registrarPago(datos: DatosRegistroPago): Promise<void> {
-  // Validar que el reparto sume al valor
-  const suma = datos.aMora + datos.aInteres + datos.aCapital;
-  if (Math.abs(suma - datos.valor) > 0.01) {
-    throw new Error(
-      `El reparto del pago no cuadra: mora(${datos.aMora}) + interés(${datos.aInteres}) + capital(${datos.aCapital}) = ${suma}, esperado ${datos.valor}`
-    );
-  }
+export async function registrarPago(
+  datos: DatosRegistroPago,
+  _offlineId?: string,
+): Promise<void> {
+  const pagoId = _offlineId || crypto.randomUUID();
 
-  // ── Paso 1: Insertar el pago ──────────────────────────────
-  const { data: pagoData, error: errPago } = await supabase.from('pago').insert({
-    id_prestamo: datos.prestamoId,
-    numero_cuota: datos.numeroCuota,
-    fecha: datos.fecha,
-    valor: datos.valor,
-    a_mora: datos.aMora,
-    a_interes: datos.aInteres,
-    a_capital: datos.aCapital,
-    nota: datos.nota,
-  }).select().single();
+  return withOfflineProtection({
+    operationKey: 'registrarPago',
+    operationType: 'insert',
+    payload: { ...datos, _offlineId: pagoId },
 
-  if (errPago) {
+    execute: async () => {
+      // Validar que el reparto sume al valor
+      const suma = datos.aMora + datos.aInteres + datos.aCapital;
+      if (Math.abs(suma - datos.valor) > 0.01) {
+        throw new Error(
+          `El reparto del pago no cuadra: mora(${datos.aMora}) + interés(${datos.aInteres}) + capital(${datos.aCapital}) = ${suma}, esperado ${datos.valor}`
+        );
+      }
 
-    throw new Error(`Error al registrar el pago: ${errPago.message}`);
-  }
-  
-  const idPago = pagoData.id_pago as string;
+      // ── Paso 1: Insertar el pago ──────────────────────────────
+      const { data: pagoData, error: errPago } = await supabase.from('pago').insert({
+        id_pago: pagoId,
+        id_prestamo: datos.prestamoId,
+        numero_cuota: datos.numeroCuota,
+        fecha: datos.fecha,
+        valor: datos.valor,
+        a_mora: datos.aMora,
+        a_interes: datos.aInteres,
+        a_capital: datos.aCapital,
+        nota: datos.nota,
+      }).select().single();
 
-  // ── Paso 2: Actualizar estado de la cuota ────────────────
-  const nuevoMontoPagado = datos.montoPagadoAnterior + datos.aCapital + datos.aInteres;
-  const pagada = nuevoMontoPagado >= datos.totalCuota - 0.01;
-  const estadoCuota: 'pendiente' | 'parcial' | 'pagada' = pagada
-    ? 'pagada'
-    : nuevoMontoPagado > 0
-    ? 'parcial'
-    : 'pendiente';
+      if (errPago) {
 
-  const { error: errCuota } = await supabase
-    .from('cuota')
-    .update({ estado: estadoCuota })
-    .eq('id_prestamo', datos.prestamoId)
-    .eq('numero_cuota', datos.numeroCuota);
+        throw new Error(`Error al registrar el pago: ${errPago.message}`);
+      }
+      
+      const idPago = pagoData.id_pago as string;
 
-  if (errCuota) {
+      // ── Paso 2: Actualizar estado de la cuota ────────────────
+      const nuevoMontoPagado = datos.montoPagadoAnterior + datos.aCapital + datos.aInteres;
+      const pagada = nuevoMontoPagado >= datos.totalCuota - 0.01;
+      const estadoCuota: 'pendiente' | 'parcial' | 'pagada' = pagada
+        ? 'pagada'
+        : nuevoMontoPagado > 0
+        ? 'parcial'
+        : 'pendiente';
 
-    // Compensar: eliminar el pago recién insertado
-    await supabase.from('pago').delete().eq('id_pago', idPago);
-    throw new Error(`Error al actualizar la cuota (pago eliminado para mantener consistencia): ${errCuota.message}`);
-  }
+      const { error: errCuota } = await supabase
+        .from('cuota')
+        .update({ estado: estadoCuota })
+        .eq('id_prestamo', datos.prestamoId)
+        .eq('numero_cuota', datos.numeroCuota);
 
-  // ── Paso 3: Verificar si todas las cuotas están pagadas ──
-  const { data: cuotasPendientes, error: errVerif } = await supabase
-    .from('cuota')
-    .select('estado')
-    .eq('id_prestamo', datos.prestamoId)
-    .neq('estado', 'pagada');
+      if (errCuota) {
 
-  if (errVerif) {
-    // No es crítico, solo no podemos verificar el estado del préstamo
-    console.warn('No se pudo verificar si el préstamo fue completamente pagado:', errVerif.message);
-    return;
-  }
+        // Compensar: eliminar el pago recién insertado
+        await supabase.from('pago').delete().eq('id_pago', idPago);
+        throw new Error(`Error al actualizar la cuota (pago eliminado para mantener consistencia): ${errCuota.message}`);
+      }
 
-  // Si no quedan cuotas sin pagar, marcar el préstamo como pagado
-  if ((cuotasPendientes ?? []).length === 0) {
-    const { error: errEstado } = await supabase
-      .from('prestamo')
-      .update({ estado: 'pagado' })
-      .eq('id_prestamo', datos.prestamoId);
+      // ── Paso 3: Verificar si todas las cuotas están pagadas ──
+      const { data: cuotasPendientes, error: errVerif } = await supabase
+        .from('cuota')
+        .select('estado')
+        .eq('id_prestamo', datos.prestamoId)
+        .neq('estado', 'pagada');
 
-    if (errEstado) {
-      console.warn('No se pudo marcar el préstamo como pagado:', errEstado.message);
-    }
-  }
+      if (errVerif) {
+        // No es crítico, solo no podemos verificar el estado del préstamo
+        console.warn('No se pudo verificar si el préstamo fue completamente pagado:', errVerif.message);
+        return;
+      }
+
+      // Si no quedan cuotas sin pagar, marcar el préstamo como pagado
+      if ((cuotasPendientes ?? []).length === 0) {
+        const { error: errEstado } = await supabase
+          .from('prestamo')
+          .update({ estado: 'pagado' })
+          .eq('id_prestamo', datos.prestamoId);
+
+        if (errEstado) {
+          console.warn('No se pudo marcar el préstamo como pagado:', errEstado.message);
+        }
+      }
+    },
+  });
 }
 
 // ── Eliminar pago ─────────────────────────────────────────────
 
 export async function eliminarPago(idPago: string): Promise<void> {
-  // 1. Obtener el pago a eliminar para saber a qué cuota/préstamo pertenece
-  const { data: pagoData, error: errObtener } = await supabase
-    .from('pago')
-    .select('*')
-    .eq('id_pago', idPago)
-    .single();
+  return withOfflineProtection({
+    operationKey: 'eliminarPago',
+    operationType: 'delete',
+    payload: { idPago },
 
-  if (errObtener) throw new Error(`Error al obtener el pago a eliminar: ${errObtener.message}`);
+    execute: async () => {
+      // 1. Obtener el pago a eliminar para saber a qué cuota/préstamo pertenece
+      const { data: pagoData, error: errObtener } = await supabase
+        .from('pago')
+        .select('*')
+        .eq('id_pago', idPago)
+        .single();
 
-  // 2. Eliminar el pago
-  const { error: errEliminar } = await supabase
-    .from('pago')
-    .delete()
-    .eq('id_pago', idPago);
+      if (errObtener) throw new Error(`Error al obtener el pago a eliminar: ${errObtener.message}`);
 
-  if (errEliminar) throw new Error(`Error al eliminar el pago: ${errEliminar.message}`);
+      // 2. Eliminar el pago
+      const { error: errEliminar } = await supabase
+        .from('pago')
+        .delete()
+        .eq('id_pago', idPago);
 
-  const prestamoId = pagoData.id_prestamo;
-  const numeroCuota = pagoData.numero_cuota;
+      if (errEliminar) throw new Error(`Error al eliminar el pago: ${errEliminar.message}`);
 
-  // 3. Recalcular el estado de la cuota
-  const { data: pagosCuota } = await supabase
-    .from('pago')
-    .select('a_capital, a_interes')
-    .eq('id_prestamo', prestamoId)
-    .eq('numero_cuota', numeroCuota);
+      const prestamoId = pagoData.id_prestamo;
+      const numeroCuota = pagoData.numero_cuota;
 
-  const montoPagado = (pagosCuota ?? []).reduce(
-    (acc, p) => acc + (p.a_capital || 0) + (p.a_interes || 0),
-    0
-  );
+      // 3. Recalcular el estado de la cuota
+      const { data: pagosCuota } = await supabase
+        .from('pago')
+        .select('a_capital, a_interes')
+        .eq('id_prestamo', prestamoId)
+        .eq('numero_cuota', numeroCuota);
 
-  const { data: cuotaData } = await supabase
-    .from('cuota')
-    .select('valor_cuota')
-    .eq('id_prestamo', prestamoId)
-    .eq('numero_cuota', numeroCuota)
-    .single();
+      const montoPagado = (pagosCuota ?? []).reduce(
+        (acc, p) => acc + (p.a_capital || 0) + (p.a_interes || 0),
+        0
+      );
 
-  const totalCuota = cuotaData?.valor_cuota || 0;
+      const { data: cuotaData } = await supabase
+        .from('cuota')
+        .select('valor_cuota')
+        .eq('id_prestamo', prestamoId)
+        .eq('numero_cuota', numeroCuota)
+        .single();
 
-  const estadoCuota =
-    montoPagado >= totalCuota - 0.01
-      ? 'pagada'
-      : montoPagado > 0
-      ? 'parcial'
-      : 'pendiente';
+      const totalCuota = cuotaData?.valor_cuota || 0;
 
-  await supabase
-    .from('cuota')
-    .update({ estado: estadoCuota })
-    .eq('id_prestamo', prestamoId)
-    .eq('numero_cuota', numeroCuota);
+      const estadoCuota =
+        montoPagado >= totalCuota - 0.01
+          ? 'pagada'
+          : montoPagado > 0
+          ? 'parcial'
+          : 'pendiente';
 
-  // 4. Si el préstamo estaba marcado como pagado, revertirlo a activo
-  if (estadoCuota !== 'pagada') {
-    const { data: prestamoData } = await supabase
-      .from('prestamo')
-      .select('estado')
-      .eq('id_prestamo', prestamoId)
-      .single();
-
-    if (prestamoData?.estado === 'pagado') {
       await supabase
-        .from('prestamo')
-        .update({ estado: 'activo' })
-        .eq('id_prestamo', prestamoId);
-    }
-  }
+        .from('cuota')
+        .update({ estado: estadoCuota })
+        .eq('id_prestamo', prestamoId)
+        .eq('numero_cuota', numeroCuota);
+
+      // 4. Si el préstamo estaba marcado como pagado, revertirlo a activo
+      if (estadoCuota !== 'pagada') {
+        const { data: prestamoData } = await supabase
+          .from('prestamo')
+          .select('estado')
+          .eq('id_prestamo', prestamoId)
+          .single();
+
+        if (prestamoData?.estado === 'pagado') {
+          await supabase
+            .from('prestamo')
+            .update({ estado: 'activo' })
+            .eq('id_prestamo', prestamoId);
+        }
+      }
+    },
+  });
 }

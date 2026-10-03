@@ -193,3 +193,26 @@
   background: rgba(255, 255, 255, 0.02);
   border-radius: 8px;
 }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .historial-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .prestamo-encabezado {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .prestamo-fechas {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .resumen-item {
+    align-items: flex-start;
+  }
+}

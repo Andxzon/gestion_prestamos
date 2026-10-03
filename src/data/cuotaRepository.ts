@@ -1,11 +1,12 @@
 // ============================================================
-// REPOSITORIO DE CUOTAS — Supabase
+// REPOSITORIO DE CUOTAS — Supabase + Offline Protection
 // Usa la vista v_saldo_prestamo para saldo pendiente.
 // ============================================================
 
 import { supabase } from '../lib/supabaseClient';
 import type { Cuota } from '../types';
 import { calcularResumenPrestamo, generarCuotasBase } from '../logic/calculos';
+import { withOfflineProtection } from '../lib/offlineWrapper';
 
 // ── Helpers de mapeo ──────────────────────────────────────────
 
@@ -83,23 +84,38 @@ export async function obtenerCuotasPorPrestamo(prestamoId: string): Promise<Cuot
 // ── Actualizar cuota ──────────────────────────────────────────
 
 export async function actualizarCuota(cuota: Cuota): Promise<Cuota> {
-  let estado: 'pendiente' | 'parcial' | 'pagada';
-  if (cuota.pagada || cuota.montoPagado >= cuota.totalCuota - 0.01) {
-    estado = 'pagada';
-  } else if (cuota.montoPagado > 0) {
-    estado = 'parcial';
-  } else {
-    estado = 'pendiente';
-  }
+  return withOfflineProtection({
+    operationKey: 'actualizarCuota',
+    operationType: 'update',
+    payload: cuota,
+    lww: {
+      table: 'cuota',
+      keyField: 'id_prestamo',
+      keyValue: cuota.prestamoId,
+    },
 
-  const { error } = await supabase
-    .from('cuota')
-    .update({ estado })
-    .eq('id_prestamo', cuota.prestamoId)
-    .eq('numero_cuota', cuota.numeroCuota);
+    execute: async () => {
+      let estado: 'pendiente' | 'parcial' | 'pagada';
+      if (cuota.pagada || cuota.montoPagado >= cuota.totalCuota - 0.01) {
+        estado = 'pagada';
+      } else if (cuota.montoPagado > 0) {
+        estado = 'parcial';
+      } else {
+        estado = 'pendiente';
+      }
 
-  if (error) throw new Error(`Error al actualizar cuota: ${error.message}`);
-  return { ...cuota, pagada: estado === 'pagada' };
+      const { error } = await supabase
+        .from('cuota')
+        .update({ estado })
+        .eq('id_prestamo', cuota.prestamoId)
+        .eq('numero_cuota', cuota.numeroCuota);
+
+      if (error) throw new Error(`Error al actualizar cuota: ${error.message}`);
+      return { ...cuota, pagada: estado === 'pagada' };
+    },
+
+    getFallbackResult: () => cuota,
+  });
 }
 
 // ── Saldo pendiente via vista v_saldo_prestamo ───────────────

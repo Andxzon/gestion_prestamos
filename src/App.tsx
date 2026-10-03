@@ -11,6 +11,13 @@ import Reportes from './pages/Reportes';
 import Login from './pages/Login';
 import { Menu } from 'lucide-react';
 import './App.css';
+import { connectionMonitor } from './lib/connectionMonitor';
+import { initSyncManager } from './lib/syncManager';
+import SyncStatusIndicator from './components/SyncStatusIndicator';
+
+// Inicializar motor offline globalmente (una sola vez)
+connectionMonitor.init();
+initSyncManager();
 
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -112,6 +119,9 @@ const App: React.FC = () => {
             <Menu size={22} />
           </button>
           <span className="app-topbar-titulo">PrestaMás</span>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+            <SyncStatusIndicator />
+          </div>
         </header>
         <main className="app-main" id="contenido-principal">
           {renderPagina()}

@@ -426,9 +426,7 @@
   gap: 12px;
 }
 
-@media (max-width: 480px) {
-  .form-grid-2 { grid-template-columns: 1fr; }
-}
+
 
 .form-label {
   font-size: 13px;
@@ -643,4 +641,48 @@
   background: linear-gradient(135deg, #7f1d1d, #991b1b);
   color: #fee2e2;
   border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .clientes-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .btn-primario, .btn-secundario, .btn-peligro {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .clientes-buscador-wrap {
+    max-width: 100%;
+  }
+
+  .cliente-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .cliente-acciones {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding-top: 12px;
+  }
+
+  .modal-pie {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .modal-pie button {
+    width: 100%;
+  }
+
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
 }

@@ -161,3 +161,30 @@
   align-items: center;
   gap: 6px;
 }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .prestamos-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .prestamo-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .prestamo-card > div:last-child {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 16px;
+  }
+
+  .resumen-grid {
+    grid-template-columns: 1fr;
+  }
+}

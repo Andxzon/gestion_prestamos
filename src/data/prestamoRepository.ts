@@ -1,5 +1,5 @@
 // ============================================================
-// REPOSITORIO DE PRÉSTAMOS — Supabase
+// REPOSITORIO DE PRÉSTAMOS — Supabase + Offline Protection
 // Única puerta de entrada para leer/escribir préstamos.
 //
 // CONVERSIÓN DE TASAS:
@@ -10,6 +10,7 @@
 
 import { supabase } from '../lib/supabaseClient';
 import type { Cuota, Prestamo, EstadoPrestamo } from '../types';
+import { withOfflineProtection } from '../lib/offlineWrapper';
 
 // ── Helpers de mapeo ──────────────────────────────────────────
 
@@ -89,117 +90,162 @@ export async function obtenerPrestamoPorId(id: string): Promise<Prestamo | undef
 
 export async function guardarPrestamo(
   datos: Omit<Prestamo, 'id' | 'estado' | 'creadoEn'>,
-  cuotas: Omit<Cuota, 'id' | 'pagada' | 'montoPagado'>[]
+  cuotas: Omit<Cuota, 'id' | 'pagada' | 'montoPagado'>[],
+  _offlineId?: string,
 ): Promise<Prestamo> {
-  // 1. Insertar el préstamo (el ID se autogenera en Supabase)
-  const { data: prestamoData, error: errP } = await supabase.from('prestamo').insert({
-    id_cliente: datos.clienteId,
-    monto: datos.monto,
-    tasa_interes: datos.tasaMensual,
-    tipo_interes: datos.tipoInteres,
-    fecha_inicio: datos.fechaInicio,
-    plazo_semanas: datos.plazoEnSemanas,
-    comision: datos.comision || 0,
-    comision_modo: datos.tipoComision === 'sumada_deuda' ? 'sumada' : 'descontada',
-    tasa_mora: datos.tasaMora || null,
-    dias_gracia: datos.diasGracia || 0,
-    estado: 'activo',
-  }).select().single();
+  const prestamoId = _offlineId || crypto.randomUUID();
 
-  if (errP) {
+  return withOfflineProtection({
+    operationKey: 'guardarPrestamo',
+    operationType: 'insert',
+    payload: { datos, cuotas, _offlineId: prestamoId },
 
-    // Manejo amigable del error de préstamo activo duplicado
-    if (errP.code === '23505' || errP.message?.includes('unique')) {
-      throw new Error('Este cliente ya tiene un préstamo activo. Debe pagarlo antes de adquirir otro.');
-    }
-    throw new Error(`Error al crear el préstamo: ${errP.message}`);
-  }
+    execute: async () => {
+      // 1. Insertar el préstamo
+      const { data: prestamoData, error: errP } = await supabase.from('prestamo').insert({
+        id_prestamo: prestamoId,
+        id_cliente: datos.clienteId,
+        monto: datos.monto,
+        tasa_interes: datos.tasaMensual,
+        tipo_interes: datos.tipoInteres,
+        fecha_inicio: datos.fechaInicio,
+        plazo_semanas: datos.plazoEnSemanas,
+        comision: datos.comision || 0,
+        comision_modo: datos.tipoComision === 'sumada_deuda' ? 'sumada' : 'descontada',
+        tasa_mora: datos.tasaMora || null,
+        dias_gracia: datos.diasGracia || 0,
+        estado: 'activo',
+      }).select().single();
 
-  const id = prestamoData.id_prestamo as string;
-  const nuevo: Prestamo = {
-    ...datos,
-    id,
-    estado: 'activo',
-    creadoEn: datos.fechaInicio,
-  };
+      if (errP) {
 
-  // 2. Insertar todas las cuotas
-  if (cuotas.length > 0) {
-    const { error: errQ } = await supabase.from('cuota').insert(
-      cuotas.map((c) => ({
-        id_prestamo: id,
-        numero_cuota: c.numeroCuota,
-        fecha_vencimiento: c.fechaVencimiento,
-        valor_cuota: c.totalCuota,
-        estado: 'pendiente',
-      }))
-    );
+        // Manejo amigable del error de préstamo activo duplicado
+        if (errP.code === '23505' || errP.message?.includes('unique')) {
+          throw new Error('Este cliente ya tiene un préstamo activo. Debe pagarlo antes de adquirir otro.');
+        }
+        throw new Error(`Error al crear el préstamo: ${errP.message}`);
+      }
 
-    if (errQ) {
+      const id = prestamoData.id_prestamo as string;
+      const nuevo: Prestamo = {
+        ...datos,
+        id,
+        estado: 'activo',
+        creadoEn: datos.fechaInicio,
+      };
 
-      // Compensación: eliminar el préstamo recién creado
-      await supabase.from('prestamo').delete().eq('id_prestamo', id);
-      throw new Error(`Error al crear las cuotas (préstamo eliminado): ${errQ.message}`);
-    }
-  }
+      // 2. Insertar todas las cuotas
+      if (cuotas.length > 0) {
+        const { error: errQ } = await supabase.from('cuota').insert(
+          cuotas.map((c) => ({
+            id_prestamo: id,
+            numero_cuota: c.numeroCuota,
+            fecha_vencimiento: c.fechaVencimiento,
+            valor_cuota: c.totalCuota,
+            estado: 'pendiente',
+          }))
+        );
 
-  return nuevo;
+        if (errQ) {
+
+          // Compensación: eliminar el préstamo recién creado
+          await supabase.from('prestamo').delete().eq('id_prestamo', id);
+          throw new Error(`Error al crear las cuotas (préstamo eliminado): ${errQ.message}`);
+        }
+      }
+
+      return nuevo;
+    },
+
+    getFallbackResult: () => ({
+      ...datos,
+      id: prestamoId,
+      estado: 'activo' as const,
+      creadoEn: datos.fechaInicio,
+    }),
+  });
 }
 
 // ── Actualizar estado ─────────────────────────────────────────
 
 export async function actualizarEstadoPrestamo(id: string, estado: EstadoPrestamo): Promise<void> {
-  const { error } = await supabase
-    .from('prestamo')
-    .update({ estado })
-    .eq('id_prestamo', id);
+  return withOfflineProtection({
+    operationKey: 'actualizarEstadoPrestamo',
+    operationType: 'update',
+    payload: { id, estado },
+    lww: { table: 'prestamo', keyField: 'id_prestamo', keyValue: id },
 
-  if (error) throw new Error(`Error al actualizar estado del préstamo: ${error.message}`);
+    execute: async () => {
+      const { error } = await supabase
+        .from('prestamo')
+        .update({ estado })
+        .eq('id_prestamo', id);
+
+      if (error) throw new Error(`Error al actualizar estado del préstamo: ${error.message}`);
+    },
+  });
 }
 
 export async function actualizarPrestamo(prestamo: Prestamo): Promise<void> {
-  const { error } = await supabase
-    .from('prestamo')
-    .update({
-      id_cliente: prestamo.clienteId,
-      monto: prestamo.monto,
-      tasa_interes: prestamo.tasaMensual,
-      tipo_interes: prestamo.tipoInteres,
-      fecha_inicio: prestamo.fechaInicio,
-      plazo_semanas: prestamo.plazoEnSemanas,
-      comision: prestamo.comision ?? null,
-      comision_modo: prestamo.tipoComision === 'sumada_deuda' ? 'sumada' : 'descontada',
-      tasa_mora: prestamo.tasaMora ?? null,
-      dias_gracia: prestamo.diasGracia ?? 0,
-      estado: prestamo.estado,
-    })
-    .eq('id_prestamo', prestamo.id);
+  return withOfflineProtection({
+    operationKey: 'actualizarPrestamo',
+    operationType: 'update',
+    payload: prestamo,
+    lww: { table: 'prestamo', keyField: 'id_prestamo', keyValue: prestamo.id },
 
-  if (error) throw new Error(`Error al actualizar préstamo: ${error.message}`);
+    execute: async () => {
+      const { error } = await supabase
+        .from('prestamo')
+        .update({
+          id_cliente: prestamo.clienteId,
+          monto: prestamo.monto,
+          tasa_interes: prestamo.tasaMensual,
+          tipo_interes: prestamo.tipoInteres,
+          fecha_inicio: prestamo.fechaInicio,
+          plazo_semanas: prestamo.plazoEnSemanas,
+          comision: prestamo.comision ?? null,
+          comision_modo: prestamo.tipoComision === 'sumada_deuda' ? 'sumada' : 'descontada',
+          tasa_mora: prestamo.tasaMora ?? null,
+          dias_gracia: prestamo.diasGracia ?? 0,
+          estado: prestamo.estado,
+        })
+        .eq('id_prestamo', prestamo.id);
+
+      if (error) throw new Error(`Error al actualizar préstamo: ${error.message}`);
+    },
+  });
 }
 
 // ── Eliminar préstamo ─────────────────────────────────────────
 
 export async function eliminarPrestamo(id: string): Promise<void> {
-  // Primero eliminar pagos asociados
-  const { error: errorPagos } = await supabase
-    .from('pago')
-    .delete()
-    .eq('id_prestamo', id);
-  if (errorPagos) throw new Error(`Error al eliminar pagos del préstamo: ${errorPagos.message}`);
+  return withOfflineProtection({
+    operationKey: 'eliminarPrestamo',
+    operationType: 'delete',
+    payload: { id },
 
-  // Luego eliminar cuotas asociadas
-  const { error: errorCuotas } = await supabase
-    .from('cuota')
-    .delete()
-    .eq('id_prestamo', id);
-  if (errorCuotas) throw new Error(`Error al eliminar cuotas del préstamo: ${errorCuotas.message}`);
+    execute: async () => {
+      // Primero eliminar pagos asociados
+      const { error: errorPagos } = await supabase
+        .from('pago')
+        .delete()
+        .eq('id_prestamo', id);
+      if (errorPagos) throw new Error(`Error al eliminar pagos del préstamo: ${errorPagos.message}`);
 
-  // Finalmente eliminar el préstamo
-  const { error } = await supabase
-    .from('prestamo')
-    .delete()
-    .eq('id_prestamo', id);
+      // Luego eliminar cuotas asociadas
+      const { error: errorCuotas } = await supabase
+        .from('cuota')
+        .delete()
+        .eq('id_prestamo', id);
+      if (errorCuotas) throw new Error(`Error al eliminar cuotas del préstamo: ${errorCuotas.message}`);
 
-  if (error) throw new Error(`Error al eliminar préstamo: ${error.message}`);
+      // Finalmente eliminar el préstamo
+      const { error } = await supabase
+        .from('prestamo')
+        .delete()
+        .eq('id_prestamo', id);
+
+      if (error) throw new Error(`Error al eliminar préstamo: ${error.message}`);
+    },
+  });
 }
