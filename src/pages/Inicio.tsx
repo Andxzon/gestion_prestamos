@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './Inicio.css';
-import { getDashboardStats, getClientesAtrasados } from '../data/dashboardRepository';
-import type { DashboardStats, ClienteAtrasado } from '../data/dashboardRepository';
+import { getDashboardStats, getClientesAtrasados, getCobrosSemana } from '../data/dashboardRepository';
+import type { DashboardStats, ClienteAtrasado, CobroSemana } from '../data/dashboardRepository';
+import { formatearFecha } from '../logic/calculos';
 import {
   DollarSign,
   TrendingUp,
@@ -9,6 +10,7 @@ import {
   AlertTriangle,
   RefreshCw,
   Clock,
+  CalendarDays,
 } from 'lucide-react';
 
 const formatCurrency = (value: number) => {
@@ -25,6 +27,7 @@ interface CardConfig {
 const Inicio: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [atrasados, setAtrasados] = useState<ClienteAtrasado[]>([]);
+  const [cobrosSemana, setCobrosSemana] = useState<CobroSemana[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,12 +35,14 @@ const Inicio: React.FC = () => {
     try {
       setCargando(true);
       setError(null);
-      const [dataStats, dataAtrasados] = await Promise.all([
+      const [dataStats, dataAtrasados, dataCobros] = await Promise.all([
         getDashboardStats(),
         getClientesAtrasados(),
+        getCobrosSemana(),
       ]);
       setStats(dataStats);
       setAtrasados(dataAtrasados);
+      setCobrosSemana(dataCobros);
     } catch (err: any) {
       setError(err.message ?? 'Error al cargar el panel de inicio.');
     } finally {
@@ -166,6 +171,46 @@ const Inicio: React.FC = () => {
                   </div>
                   <div className="atrasado-monto">
                     {formatCurrency(cliente.montoAtrasado)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Cobros de la Semana */}
+        <div className="atrasados-section cobros-semana-section">
+          <div className="atrasados-section-header">
+            <h2 className="atrasados-titulo">
+              <CalendarDays size={18} strokeWidth={2} />
+              Por Cobrar Esta Semana
+            </h2>
+            {cobrosSemana.length > 0 && (
+              <span className="atrasados-badge" style={{ background: 'var(--color-primario)' }}>{cobrosSemana.length}</span>
+            )}
+          </div>
+
+          {cobrosSemana.length === 0 ? (
+            <div className="no-atrasados">
+              <CalendarClock size={28} strokeWidth={1.5} />
+              <span>No hay cuotas programadas para cobrar esta semana.</span>
+            </div>
+          ) : (
+            <div className="atrasados-list">
+              {cobrosSemana.map((cobro) => (
+                <div key={`${cobro.id_prestamo}-${cobro.numero_cuota}`} className="atrasado-item cobro-item">
+                  <div className="atrasado-avatar" style={{ background: 'rgba(59, 130, 246, 0.15)', color: 'var(--color-primario-light)' }}>
+                    {cobro.nombre.split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase()}
+                  </div>
+                  <div className="atrasado-info">
+                    <span className="atrasado-nombre">{cobro.nombre}</span>
+                    <span className="atrasado-dias">
+                      <CalendarDays size={13} strokeWidth={2} />
+                      Ir el: {formatearFecha(cobro.fechaCobro)}
+                    </span>
+                  </div>
+                  <div className="atrasado-monto" style={{ color: 'var(--color-texto)' }}>
+                    {formatCurrency(cobro.monto)}
                   </div>
                 </div>
               ))}

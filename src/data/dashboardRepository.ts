@@ -19,6 +19,14 @@ export interface ClienteAtrasado {
   montoAtrasado: number;
 }
 
+export interface CobroSemana {
+  id_prestamo: string;
+  numero_cuota: number;
+  nombre: string;
+  fechaCobro: string;
+  monto: number;
+}
+
 export interface ReporteClienteRow {
   id: string;
   nombre: string;
@@ -197,6 +205,65 @@ export async function getClientesAtrasados(): Promise<ClienteAtrasado[]> {
   }
 
   return resultado.sort((a, b) => b.diasAtraso - a.diasAtraso);
+}
+
+// ── Cobros de esta semana ─────────────────────────────────────
+
+export async function getCobrosSemana(): Promise<CobroSemana[]> {
+  const hoyStr = fechaHoyLocal();
+  const dateHoy = new Date(hoyStr + 'T00:00:00');
+  const maxDate = new Date(dateHoy);
+  maxDate.setDate(dateHoy.getDate() + 7);
+  const maxDateStr = maxDate.toISOString().split('T')[0];
+
+  const { data: cuotas, error } = await supabase
+    .from('cuota')
+    .select('id_prestamo, numero_cuota, valor_cuota, fecha_vencimiento')
+    .neq('estado', 'pagada')
+    .gte('fecha_vencimiento', hoyStr)
+    .lte('fecha_vencimiento', maxDateStr)
+    .order('fecha_vencimiento', { ascending: true });
+
+  if (error) throw new Error(`Error al obtener cobros de la semana: ${error.message}`);
+  if (!cuotas || cuotas.length === 0) return [];
+
+  const pIds = Array.from(new Set(cuotas.map(c => c.id_prestamo)));
+  const [ { data: prestamos }, { data: clientes }, { data: pagos } ] = await Promise.all([
+    supabase.from('prestamo').select('id_prestamo, id_cliente').in('id_prestamo', pIds),
+    supabase.from('cliente').select('id_cliente, nombre'),
+    supabase.from('pago').select('id_prestamo, numero_cuota, a_capital, a_interes').in('id_prestamo', pIds),
+  ]);
+
+  const pMap = new Map((prestamos ?? []).map(p => [p.id_prestamo, p.id_cliente]));
+  const cMap = new Map((clientes ?? []).map(c => [c.id_cliente, c.nombre]));
+
+  const pagosMap = new Map<string, number>();
+  for (const p of pagos ?? []) {
+    const key = `${p.id_prestamo}-${p.numero_cuota}`;
+    const pagado = (p.a_capital ?? 0) + (p.a_interes ?? 0);
+    pagosMap.set(key, (pagosMap.get(key) ?? 0) + pagado);
+  }
+
+  const resultado: CobroSemana[] = [];
+  for (const c of cuotas) {
+    const key = `${c.id_prestamo}-${c.numero_cuota}`;
+    const pagado = pagosMap.get(key) ?? 0;
+    const monto = c.valor_cuota - pagado;
+    
+    if (monto > 0) {
+      const idCliente = pMap.get(c.id_prestamo);
+      const nombre = idCliente ? (cMap.get(idCliente) ?? 'Desconocido') : 'Desconocido';
+      resultado.push({
+        id_prestamo: c.id_prestamo,
+        numero_cuota: c.numero_cuota,
+        nombre,
+        fechaCobro: c.fecha_vencimiento,
+        monto,
+      });
+    }
+  }
+
+  return resultado;
 }
 
 // ── Reporte de clientes ───────────────────────────────────────
