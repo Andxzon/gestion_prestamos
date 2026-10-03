@@ -1,0 +1,163 @@
+/* ============================================================
+   ESTILOS GLOBALES — PrestaMás
+   ============================================================ */
+
+/* ── Google Fonts ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ── Reset y base ─────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Paleta principal */
+  --color-bg:          #0f1117;
+  --color-superficie:  #161b27;
+  --color-borde:       rgba(255, 255, 255, 0.08);
+
+  /* Azul acento */
+  --color-primario:    #3b82f6;
+  --color-primario-light: #60a5fa;
+  --color-primario-dark:  #2563eb;
+
+  /* Texto */
+  --color-texto:       #e2e8f0;
+  --color-texto-suave: rgba(226, 232, 240, 0.55);
+  --color-texto-muted: rgba(226, 232, 240, 0.3);
+
+  /* Semáforo */
+  --color-verde:  #10b981;
+  --color-rojo:   #ef4444;
+  --color-ambar:  #f59e0b;
+
+  /* Bordes y espaciado */
+  --radio-sm:   6px;
+  --radio-md:   10px;
+  --radio-lg:   16px;
+  --radio-xl:   20px;
+
+  /* Sombras */
+  --sombra-sm:  0 1px 3px rgba(0,0,0,0.3);
+  --sombra-md:  0 4px 16px rgba(0,0,0,0.4);
+  --sombra-lg:  0 8px 32px rgba(0,0,0,0.5);
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-texto);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Layout principal ─────────────────────────────────────── */
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-main {
+  flex: 1;
+  min-height: 100vh;
+  background: var(--color-bg);
+  overflow-y: auto;
+}
+
+/* ── Páginas (contenedores genéricos) ─────────────────────── */
+
+.pagina-contenido {
+  padding: 40px 48px;
+  max-width: 1200px;
+  animation: fadeIn 0.25s ease;
+}
+
+.pagina-titulo {
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+
+.pagina-subtitulo {
+  font-size: 15px;
+  color: var(--color-texto-suave);
+  font-weight: 400;
+}
+
+/* ── Animaciones ──────────────────────────────────────────── */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Scrollbar personalizada ──────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* ── Estados asíncronos ────────────────────────────────────── */
+
+.estado-carga,
+.estado-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 200px;
+  color: var(--color-texto-suave);
+  font-size: 1rem;
+  text-align: center;
+  padding: 2rem;
+}
+
+.estado-error span {
+  font-size: 2.5rem;
+}
+
+.estado-error p {
+  max-width: 480px;
+  line-height: 1.6;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(59, 130, 246, 0.25);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  flex-shrink: 0;
+}

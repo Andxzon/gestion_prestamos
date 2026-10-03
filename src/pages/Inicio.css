@@ -1,0 +1,132 @@
+/* =========================================================
+   Inicio.css - Dashboard
+   ========================================================= */
+
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Tarjetas de Resumen */
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.dashboard-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(var(--primary-rgb), 0.3);
+  border-color: var(--primary-color);
+}
+
+.dashboard-card.warning:hover {
+  box-shadow: 0 8px 15px rgba(255, 87, 87, 0.3);
+  border-color: var(--danger-color);
+}
+
+.card-title {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dashboard-card.warning .card-value {
+  color: var(--danger-color);
+}
+
+/* Lista de Atrasados */
+.atrasados-section {
+  background: var(--bg-surface);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.atrasados-section h2 {
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 0.5rem;
+}
+
+.atrasados-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.atrasado-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border-left: 4px solid var(--danger-color);
+  transition: background 0.2s ease;
+}
+
+.atrasado-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.atrasado-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.atrasado-nombre {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.atrasado-dias {
+  font-size: 0.9rem;
+  color: var(--danger-color);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.atrasado-monto {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.no-atrasados {
+  text-align: center;
+  padding: 2rem;
+  color: var(--success-color);
+  font-size: 1.1rem;
+  font-weight: 500;
+  background: rgba(var(--success-rgb), 0.1);
+  border-radius: 8px;
+  border: 1px dashed var(--success-color);
+}

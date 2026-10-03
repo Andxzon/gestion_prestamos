@@ -1,0 +1,143 @@
+/* ============================================================
+   PANTALLA PRÉSTAMOS
+   ============================================================ */
+
+.prestamos-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+/* ── Lista de Préstamos ──────────────────────────────────── */
+.prestamos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prestamo-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.prestamo-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.prestamo-info-principal {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prestamo-cliente {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.prestamo-detalles {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--color-texto-suave);
+}
+
+.prestamo-monto {
+  font-weight: 700;
+  color: var(--color-verde);
+  font-size: 18px;
+}
+
+.estado-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.estado-badge.activo {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.estado-badge.pagado {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* ── Formulario Préstamo ─────────────────────────────────── */
+.resumen-prestamo {
+  margin-top: 24px;
+  padding: 20px;
+  background: rgba(59, 130, 246, 0.05);
+  border: 1px dashed rgba(59, 130, 246, 0.3);
+  border-radius: var(--radio-md);
+}
+
+.resumen-titulo {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primario-light);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.resumen-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.resumen-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resumen-label {
+  font-size: 12px;
+  color: var(--color-texto-suave);
+}
+
+.resumen-valor {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.resumen-valor.destacado {
+  color: var(--color-verde);
+  font-size: 20px;
+}
+
+.form-select {
+  width: 100%;
+  padding: 10px 13px;
+  background: #1e2535;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radio-sm);
+  color: var(--color-texto);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  outline: none;
+  appearance: none; /* Elimina la flecha nativa en algunos navegadores si queremos customizar */
+}
+
+.form-select:focus {
+  border-color: var(--color-primario);
+}

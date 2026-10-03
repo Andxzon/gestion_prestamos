@@ -1,0 +1,183 @@
+/* =========================================================
+   Reportes.css - Módulo de Reportes
+   ========================================================= */
+
+.reportes-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Filtros y Acciones */
+.reportes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: var(--bg-surface);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.filtros-grupo {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.filtros-grupo label {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.report-select,
+.report-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.report-select:focus,
+.report-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
+}
+
+.acciones-grupo {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-exportar {
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-exportar:hover {
+  background-color: #ff9d00;
+  transform: translateY(-2px);
+}
+
+/* Proyección */
+.proyeccion-section {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.proyeccion-card {
+  flex: 1;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.02));
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.proyeccion-card.ganancia {
+  background: linear-gradient(135deg, rgba(var(--success-rgb), 0.1), rgba(var(--success-rgb), 0.02));
+  border-color: rgba(var(--success-rgb), 0.2);
+}
+
+.proyeccion-titulo {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.proyeccion-valor {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Tabla de Reportes */
+.tabla-reportes-container {
+  overflow-x: auto;
+  background: var(--bg-surface);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.tabla-reportes {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+.tabla-reportes th,
+.tabla-reportes td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tabla-reportes th {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.tabla-reportes tbody tr {
+  transition: background 0.2s ease;
+}
+
+.tabla-reportes tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tabla-reportes td {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.badge-estado {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-estado.activo {
+  background: rgba(var(--primary-rgb), 0.2);
+  color: var(--primary-color);
+}
+
+.badge-estado.pagado {
+  background: rgba(var(--success-rgb), 0.2);
+  color: var(--success-color);
+}
+
+.badge-estado.vencido {
+  background: rgba(255, 87, 87, 0.2);
+  color: var(--danger-color);
+}
+
+.texto-peligro {
+  color: var(--danger-color);
+  font-weight: 600;
+}

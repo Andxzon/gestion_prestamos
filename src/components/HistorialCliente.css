@@ -1,0 +1,195 @@
+/* =========================================================
+   HistorialCliente.css
+   ========================================================= */
+
+.historial-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  animation: fadeIn 0.4s ease;
+  width: 100%;
+}
+
+.historial-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.btn-volver {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.btn-volver:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--primary-color);
+}
+
+.historial-titulo-grupo h2 {
+  font-size: 1.6rem;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+
+.historial-subtitulo {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.historial-vacio {
+  text-align: center;
+  padding: 3rem;
+  background: var(--bg-surface);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+.historial-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.historial-prestamo-card {
+  background: var(--bg-surface);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.prestamo-encabezado {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1.2rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.prestamo-info-principal {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.prestamo-info-principal h3 {
+  font-size: 1.2rem;
+  margin: 0;
+  color: var(--primary-color);
+}
+
+.prestamo-fechas {
+  display: flex;
+  gap: 1.5rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.prestamo-resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 1.5rem;
+  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.05), transparent);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.resumen-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.resumen-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.resumen-valor {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.resumen-valor.warning {
+  color: var(--accent-color);
+}
+
+.resumen-valor.danger {
+  color: var(--danger-color);
+}
+
+.prestamo-detalles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .prestamo-detalles {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detalle-columna h4 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.5rem;
+}
+
+.tabla-scroll {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tabla-historial {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.tabla-historial th,
+.tabla-historial td {
+  padding: 0.8rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.tabla-historial th {
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.tabla-historial tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.text-success { color: var(--success-color); }
+.text-danger { color: var(--danger-color); font-weight: 600; }
+.text-warning { color: var(--accent-color); }
+
+.pagos-vacio {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+}

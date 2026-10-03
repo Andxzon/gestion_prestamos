@@ -1,0 +1,137 @@
+/* ============================================================
+   PANTALLA COBROS
+   ============================================================ */
+
+.cobros-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.cobro-card {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  overflow: hidden;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.cobro-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.cobro-info {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.cobro-cliente {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cobro-detalles {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--color-texto-suave);
+}
+
+.cobro-estado-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.cobro-estado-badge.al-dia {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.cobro-estado-badge.pendiente-hoy {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.cobro-estado-badge.atrasado {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.cobro-accion {
+  background: rgba(59, 130, 246, 0.05);
+  border-left: 1px solid var(--color-borde);
+  padding: 20px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+  min-width: 250px;
+}
+
+.cobro-monto-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.cobro-monto-label {
+  font-size: 12px;
+  color: var(--color-texto-suave);
+}
+
+.cobro-monto-valor {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-verde);
+}
+
+.cobro-mora-valor {
+  font-size: 13px;
+  color: #f87171;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.modal-resumen-pago {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  padding: 16px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resumen-pago-fila {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--color-texto-suave);
+}
+
+.resumen-pago-fila.total {
+  font-weight: 700;
+  color: #fff;
+  border-top: 1px solid var(--color-borde);
+  padding-top: 8px;
+  margin-top: 4px;
+}
