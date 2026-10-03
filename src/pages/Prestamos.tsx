@@ -247,7 +247,7 @@ const Prestamos: React.FC = () => {
                    <span className="prestamo-detalle-item"><TrendingUp size={13} strokeWidth={2} /> {(p.tasaMensual * 100).toFixed(1)}% {p.tipoInteres}</span>
                 </div>
               </div>
-              <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+              <div className="prestamo-acciones">
                  <div className="prestamo-monto">{formatearMoneda(p.monto)}</div>
                  <span className={`estado-badge ${p.estado}`}>{p.estado}</span>
                  <button 
@@ -274,7 +274,7 @@ const Prestamos: React.FC = () => {
               <button className="modal-cerrar" onClick={cerrarModal}><X size={18} /></button>
             </div>
 
-            <div className="modal-cuerpo" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+            <div className="modal-cuerpo prestamo-modal-grid">
               
               {/* Columna Izquierda: Formulario */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
