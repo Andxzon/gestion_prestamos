@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Cloud, CloudOff, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import { CloudOff, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import { connectionMonitor } from '../lib/connectionMonitor';
 import { countPending } from '../lib/offlineQueue';
 import { syncNow } from '../lib/syncManager';

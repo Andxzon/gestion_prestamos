@@ -10,12 +10,10 @@ import {
   markFailed,
   markSyncing,
   markSkipped,
-  removeFromQueue,
   type QueueEntry,
 } from './offlineQueue';
 import { connectionMonitor } from './connectionMonitor';
 import { enterReplay, exitReplay } from './syncState';
-import { getDeviceId } from './deviceId';
 import { supabase } from './supabaseClient';
 import { isDuplicateKeyError } from './offlineWrapper';
 

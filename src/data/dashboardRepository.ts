@@ -275,7 +275,7 @@ export async function obtenerReporteClientes(): Promise<ReporteClienteRow[]> {
   const [
     { data: clientes, error: errC },
     { data: prestamos, error: errP },
-    { data: saldos, error: errS },
+    , // { data: saldos, error: errS } no se usan
     { data: atrasadas, error: errA },
     { data: pagos, error: errPg },
   ] = await Promise.all([
@@ -302,7 +302,7 @@ export async function obtenerReporteClientes(): Promise<ReporteClienteRow[]> {
     }
   }
 
-  const { data: cuotasData, error: errCuotas } = await supabase.from('cuota').select('id_prestamo, valor_cuota');
+  const { data: cuotasData } = await supabase.from('cuota').select('id_prestamo, valor_cuota');
   const totalEsperadoPorPrestamo = new Map<string, number>();
   for (const c of cuotasData ?? []) {
     totalEsperadoPorPrestamo.set(c.id_prestamo, (totalEsperadoPorPrestamo.get(c.id_prestamo) ?? 0) + c.valor_cuota);
