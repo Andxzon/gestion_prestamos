@@ -20,18 +20,18 @@ describe('calcularResumenPrestamo — interés simple', () => {
   it('calcula correctamente con 30 días al 10% mensual', () => {
     // Verificación manual:
     //   interésTotal = 600 000 × 0.10 × (30/30) = 60 000
-    //   cuotaDiaria  = (600 000 + 60 000) / 30  = 22 000
+    //   cuotaSemanal  = (600 000 + 60 000) / 30  = 22 000
     //   totalAPagar  = 22 000 × 30              = 660 000
     const r = calcularResumenPrestamo({
       monto: 600_000,
       tasaMensual: 0.10,
       tipoInteres: 'simple',
-      plazoEnDias: 30,
+      plazoEnSemanas: 30,
       fechaInicio: '2024-06-01',
     });
 
     expect(r.interesTotal).toBeCloseTo(60_000, 0);
-    expect(r.cuotaDiaria).toBeCloseTo(22_000, 0);
+    expect(r.cuotaSemanal).toBeCloseTo(22_000, 0);
     expect(r.totalAPagar).toBeCloseTo(660_000, 0);
     expect(r.fechaFinal).toBe('2024-06-30');
     expect(r.capitalBase).toBe(600_000);
@@ -40,33 +40,33 @@ describe('calcularResumenPrestamo — interés simple', () => {
 
   it('calcula correctamente con 15 días al 8% mensual', () => {
     // interésTotal = 300 000 × 0.08 × (15/30) = 12 000
-    // cuotaDiaria  = (300 000 + 12 000) / 15  = 20 800
+    // cuotaSemanal  = (300 000 + 12 000) / 15  = 20 800
     const r = calcularResumenPrestamo({
       monto: 300_000,
       tasaMensual: 0.08,
       tipoInteres: 'simple',
-      plazoEnDias: 15,
+      plazoEnSemanas: 15,
       fechaInicio: '2024-07-01',
     });
 
     expect(r.interesTotal).toBeCloseTo(12_000, 0);
-    expect(r.cuotaDiaria).toBeCloseTo(20_800, 0);
+    expect(r.cuotaSemanal).toBeCloseTo(20_800, 0);
     expect(r.totalAPagar).toBeCloseTo(312_000, 0);
     expect(r.fechaFinal).toBe('2024-07-15');
   });
 
   it('sin interés (tasa = 0): cuota es solo capital', () => {
-    // cuotaDiaria = 300 000 / 30 = 10 000, sin interés
+    // cuotaSemanal = 300 000 / 30 = 10 000, sin interés
     const r = calcularResumenPrestamo({
       monto: 300_000,
       tasaMensual: 0,
       tipoInteres: 'simple',
-      plazoEnDias: 30,
+      plazoEnSemanas: 30,
       fechaInicio: '2024-01-01',
     });
 
     expect(r.interesTotal).toBe(0);
-    expect(r.cuotaDiaria).toBeCloseTo(10_000, 0);
+    expect(r.cuotaSemanal).toBeCloseTo(10_000, 0);
     expect(r.totalAPagar).toBeCloseTo(300_000, 0);
   });
 });
@@ -87,23 +87,23 @@ describe('calcularResumenPrestamo — interés compuesto', () => {
       monto: 600_000,
       tasaMensual: 0.10,
       tipoInteres: 'compuesto',
-      plazoEnDias: 30,
+      plazoEnSemanas: 30,
       fechaInicio: '2024-06-01',
     });
 
     // Verificamos que cuota ≈ 20 955 (tolerancia ±100)
-    expect(r.cuotaDiaria).toBeGreaterThan(20_800);
-    expect(r.cuotaDiaria).toBeLessThan(21_100);
+    expect(r.cuotaSemanal).toBeGreaterThan(20_800);
+    expect(r.cuotaSemanal).toBeLessThan(21_100);
 
     // El total × (1+i)^30 debe recuperar el capital
     // totalAPagar = cuota × 30 ≈ 628 650
-    expect(r.totalAPagar).toBeCloseTo(r.cuotaDiaria * 30, 0);
+    expect(r.totalAPagar).toBeCloseTo(r.cuotaSemanal * 30, 0);
 
     // Interés compuesto < interés simple para el mismo plazo y tasa
     // (porque la anualidad paga capital progresivamente)
     const simple = calcularResumenPrestamo({
       monto: 600_000, tasaMensual: 0.10,
-      tipoInteres: 'simple', plazoEnDias: 30, fechaInicio: '2024-06-01',
+      tipoInteres: 'simple', plazoEnSemanas: 30, fechaInicio: '2024-06-01',
     });
     expect(r.interesTotal).toBeLessThan(simple.interesTotal);
   });
@@ -113,11 +113,11 @@ describe('calcularResumenPrestamo — interés compuesto', () => {
       monto: 100_000,
       tasaMensual: 0.12,
       tipoInteres: 'compuesto',
-      plazoEnDias: 30,
+      plazoEnSemanas: 30,
       fechaInicio: '2024-01-01',
     });
     // La tasa diaria satisface esta propiedad por definición
-    expect(Math.pow(1 + r.tasaDiariaEfectiva, 30)).toBeCloseTo(1.12, 8);
+    expect(Math.pow(1 + r.tasaSemanalEfectiva, 30)).toBeCloseTo(1.12, 8);
   });
 });
 
@@ -134,7 +134,7 @@ describe('calcularResumenPrestamo — comisión', () => {
       monto: 500_000,
       tasaMensual: 0.10,
       tipoInteres: 'simple',
-      plazoEnDias: 30,
+      plazoEnSemanas: 30,
       comision: 20_000,
       tipoComision: 'descontada_desembolso',
       fechaInicio: '2024-01-01',
@@ -154,7 +154,7 @@ describe('calcularResumenPrestamo — comisión', () => {
       monto: 500_000,
       tasaMensual: 0.10,
       tipoInteres: 'simple',
-      plazoEnDias: 30,
+      plazoEnSemanas: 30,
       comision: 20_000,
       tipoComision: 'sumada_deuda',
       fechaInicio: '2024-01-01',
@@ -171,7 +171,7 @@ describe('calcularResumenPrestamo — comisión', () => {
       monto: 400_000,
       tasaMensual: 0.10,
       tipoInteres: 'simple',
-      plazoEnDias: 30,
+      plazoEnSemanas: 30,
       fechaInicio: '2024-01-01',
     });
     expect(r.capitalBase).toBe(400_000);
@@ -189,12 +189,12 @@ describe('generarCuotasBase — interés simple', () => {
 
   const resumen = calcularResumenPrestamo({
     monto: MONTO, tasaMensual: 0.10,
-    tipoInteres: 'simple', plazoEnDias: PLAZO, fechaInicio: '2024-07-01',
+    tipoInteres: 'simple', plazoEnSemanas: PLAZO, fechaInicio: '2024-07-01',
   });
 
   const cuotas = generarCuotasBase(
-    resumen.capitalBase, resumen.cuotaDiaria,
-    resumen.tasaDiariaEfectiva, 'simple', PLAZO, '2024-07-01'
+    resumen.capitalBase, resumen.cuotaSemanal,
+    resumen.tasaSemanalEfectiva, 'simple', PLAZO, '2024-07-01'
   );
 
   it('genera exactamente el número de días de plazo', () => {
@@ -229,12 +229,12 @@ describe('generarCuotasBase — interés compuesto (amortización)', () => {
 
   const resumen = calcularResumenPrestamo({
     monto: MONTO, tasaMensual: 0.10,
-    tipoInteres: 'compuesto', plazoEnDias: PLAZO, fechaInicio: '2024-01-01',
+    tipoInteres: 'compuesto', plazoEnSemanas: PLAZO, fechaInicio: '2024-01-01',
   });
 
   const cuotas = generarCuotasBase(
-    resumen.capitalBase, resumen.cuotaDiaria,
-    resumen.tasaDiariaEfectiva, 'compuesto', PLAZO, '2024-01-01'
+    resumen.capitalBase, resumen.cuotaSemanal,
+    resumen.tasaSemanalEfectiva, 'compuesto', PLAZO, '2024-01-01'
   );
 
   it('genera exactamente el número de días de plazo', () => {

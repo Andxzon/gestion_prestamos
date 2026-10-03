@@ -10,18 +10,18 @@ import type { TipoInteres, TipoComision } from '../types';
 // ────────────────────────────────────────────────────────────
 
 export interface ResumenPrestamo {
-  /** Pago que el cliente debe hacer cada día */
-  cuotaDiaria: number;
+  /** Pago que el cliente debe hacer cada semana */
+  cuotaSemanal: number;
   /** Suma de intereses a lo largo del plazo */
   interesTotal: number;
-  /** Capital + intereses (cuotaDiaria × plazoEnDias) */
+  /** Capital + intereses (cuotaSemanal × plazoEnSemanas) */
   totalAPagar: number;
   /** Dinero en mano que recibe el cliente */
   montoEfectivoCliente: number;
   /** Base sobre la que se calculan los intereses */
   capitalBase: number;
-  /** Tasa diaria efectiva usada en los cálculos */
-  tasaDiariaEfectiva: number;
+  /** Tasa semanal efectiva usada en los cálculos */
+  tasaSemanalEfectiva: number;
   /** Fecha del último día de pago (YYYY-MM-DD) */
   fechaFinal: string;
 }
@@ -55,12 +55,12 @@ export function calcularResumenPrestamo(params: {
   monto: number;
   tasaMensual: number;
   tipoInteres: TipoInteres;
-  plazoEnDias: number;
+  plazoEnSemanas: number;
   fechaInicio: string;
   comision?: number;
   tipoComision?: TipoComision;
 }): ResumenPrestamo {
-  const { monto, tasaMensual, tipoInteres, plazoEnDias, fechaInicio } = params;
+  const { monto, tasaMensual, tipoInteres, plazoEnSemanas, fechaInicio } = params;
   const comision = params.comision ?? 0;
   const tipoComision = params.tipoComision ?? 'descontada_desembolso';
 
@@ -72,40 +72,40 @@ export function calcularResumenPrestamo(params: {
   const montoEfectivoCliente =
     tipoComision === 'descontada_desembolso' ? monto - comision : monto;
 
-  let cuotaDiaria: number;
+  let cuotaSemanal: number;
   let interesTotal: number;
-  let tasaDiariaEfectiva: number;
+  let tasaSemanalEfectiva: number;
 
   if (tasaMensual === 0) {
     // Sin interés
-    tasaDiariaEfectiva = 0;
-    cuotaDiaria = capitalBase / plazoEnDias;
+    tasaSemanalEfectiva = 0;
+    cuotaSemanal = capitalBase / plazoEnSemanas;
     interesTotal = 0;
   } else if (tipoInteres === 'simple') {
-    tasaDiariaEfectiva = tasaMensual / 30;
-    interesTotal = capitalBase * tasaMensual * (plazoEnDias / 30);
-    cuotaDiaria = (capitalBase + interesTotal) / plazoEnDias;
+    tasaSemanalEfectiva = tasaMensual / 4;
+    interesTotal = capitalBase * tasaMensual * (plazoEnSemanas / 4);
+    cuotaSemanal = (capitalBase + interesTotal) / plazoEnSemanas;
   } else {
     // Interés compuesto — fórmula de anualidad
-    tasaDiariaEfectiva = Math.pow(1 + tasaMensual, 1 / 30) - 1;
-    cuotaDiaria =
-      (capitalBase * tasaDiariaEfectiva) /
-      (1 - Math.pow(1 + tasaDiariaEfectiva, -plazoEnDias));
-    interesTotal = cuotaDiaria * plazoEnDias - capitalBase;
+    tasaSemanalEfectiva = Math.pow(1 + tasaMensual, 1 / 4) - 1;
+    cuotaSemanal =
+      (capitalBase * tasaSemanalEfectiva) /
+      (1 - Math.pow(1 + tasaSemanalEfectiva, -plazoEnSemanas));
+    interesTotal = cuotaSemanal * plazoEnSemanas - capitalBase;
   }
 
-  // ── Fecha final (día N del préstamo) ────────────────────
+  // ── Fecha final (semana N del préstamo) ────────────────────
   const fecha = new Date(fechaInicio + 'T00:00:00');
-  fecha.setDate(fecha.getDate() + plazoEnDias - 1);
+  fecha.setDate(fecha.getDate() + (plazoEnSemanas - 1) * 7);
   const fechaFinal = fecha.toISOString().split('T')[0];
 
   return {
-    cuotaDiaria,
+    cuotaSemanal,
     interesTotal,
-    totalAPagar: cuotaDiaria * plazoEnDias,
+    totalAPagar: cuotaSemanal * plazoEnSemanas,
     montoEfectivoCliente,
     capitalBase,
-    tasaDiariaEfectiva,
+    tasaSemanalEfectiva,
     fechaFinal,
   };
 }
@@ -123,10 +123,10 @@ export function calcularResumenPrestamo(params: {
  */
 export function generarCuotasBase(
   capitalBase: number,
-  cuotaDiaria: number,
-  tasaDiariaEfectiva: number,
+  cuotaSemanal: number,
+  tasaSemanalEfectiva: number,
   tipoInteres: TipoInteres,
-  plazoEnDias: number,
+  plazoEnSemanas: number,
   fechaInicio: string
 ): CuotaGenerada[] {
   const cuotas: CuotaGenerada[] = [];
@@ -137,48 +137,48 @@ export function generarCuotasBase(
     return d.toISOString().split('T')[0];
   };
 
-  if (tipoInteres === 'simple' || tasaDiariaEfectiva === 0) {
+  if (tipoInteres === 'simple' || tasaSemanalEfectiva === 0) {
     // Cada cuota tiene la misma proporción de capital e interés
-    const capitalDia = capitalBase / plazoEnDias;
-    const interesDia = capitalBase * tasaDiariaEfectiva;
+    const capitalSemana = capitalBase / plazoEnSemanas;
+    const interesSemana = capitalBase * tasaSemanalEfectiva;
 
-    for (let n = 1; n <= plazoEnDias; n++) {
+    for (let n = 1; n <= plazoEnSemanas; n++) {
       cuotas.push({
         numeroCuota: n,
-        fechaVencimiento: addDias(fechaInicio, n - 1),
-        montoCapital: capitalDia,
-        montoInteres: interesDia,
-        totalCuota: cuotaDiaria,
+        fechaVencimiento: addDias(fechaInicio, (n - 1) * 7),
+        montoCapital: capitalSemana,
+        montoInteres: interesSemana,
+        totalCuota: cuotaSemanal,
       });
     }
   } else {
     // Tabla de amortización (interés compuesto)
     let saldo = capitalBase;
-    const i = tasaDiariaEfectiva;
+    const i = tasaSemanalEfectiva;
 
-    for (let n = 1; n <= plazoEnDias; n++) {
-      const interesDia = saldo * i;
-      let capitalDia: number;
-      let totalDia: number;
+    for (let n = 1; n <= plazoEnSemanas; n++) {
+      const interesSemana = saldo * i;
+      let capitalSemana: number;
+      let totalSemana: number;
 
-      if (n === plazoEnDias) {
+      if (n === plazoEnSemanas) {
         // Último pago: liquidar saldo exacto para eliminar error de redondeo
-        capitalDia = saldo;
-        totalDia = saldo + interesDia;
+        capitalSemana = saldo;
+        totalSemana = saldo + interesSemana;
       } else {
-        capitalDia = cuotaDiaria - interesDia;
-        totalDia = cuotaDiaria;
+        capitalSemana = cuotaSemanal - interesSemana;
+        totalSemana = cuotaSemanal;
       }
 
       cuotas.push({
         numeroCuota: n,
-        fechaVencimiento: addDias(fechaInicio, n - 1),
-        montoCapital: Math.max(0, capitalDia),
-        montoInteres: interesDia,
-        totalCuota: totalDia,
+        fechaVencimiento: addDias(fechaInicio, (n - 1) * 7),
+        montoCapital: Math.max(0, capitalSemana),
+        montoInteres: interesSemana,
+        totalCuota: totalSemana,
       });
 
-      saldo = Math.max(0, saldo - capitalDia);
+      saldo = Math.max(0, saldo - capitalSemana);
     }
   }
 

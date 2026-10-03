@@ -11,7 +11,7 @@ import HistorialCliente from '../components/HistorialCliente';
 import {
   Plus, Search, X, Eye, Pencil, Trash2, UserPlus, User,
   Phone, MapPin, AlertTriangle, RefreshCw, CheckCircle,
-  XCircle, ChevronRight,
+  XCircle,
 } from 'lucide-react';
 import './Clientes.css';
 

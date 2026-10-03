@@ -36,6 +36,7 @@ const Cobros: React.FC = () => {
   const [cobroSeleccionado, setCobroSeleccionado] = useState<CobroVisual | null>(null);
   const [montoPago, setMontoPago] = useState<number | ''>(0);
   const [fechaPago, setFechaPago] = useState<string>(fechaHoyLocal());
+  const [notaPago, setNotaPago] = useState<string>('');
   const [procesandoPago, setProcesandoPago] = useState(false);
   const [toast, setToast] = useState<{ tipo: 'exito' | 'error'; mensaje: string } | null>(null);
 
@@ -131,6 +132,7 @@ const Cobros: React.FC = () => {
     setCobroSeleccionado(cobro);
     setMontoPago(cobro.totalExigible || 0);
     setFechaPago(fechaHoyLocal());
+    setNotaPago('');
     setModalVisible(true);
   };
 
@@ -141,50 +143,67 @@ const Cobros: React.FC = () => {
 
   // ── Lógica de Pago (Múltiples Cuotas) ────────────────────
   const registrarPagoHandler = async () => {
-    if (!cobroSeleccionado || Number(montoPago) <= 0) return;
+    if (!cobroSeleccionado || Number(montoPago) < 0) return;
 
     setProcesandoPago(true);
     try {
       let sobrante = Number(montoPago);
-      const { prestamo, cuotasPendientes } = cobroSeleccionado;
+      const { prestamo, cuotasPendientes, cuotaActual } = cobroSeleccionado;
 
-      for (const cuota of cuotasPendientes) {
-        if (sobrante <= 0) break;
-
-        const atraso = diasDeAtraso(cuota.fechaVencimiento);
-        const moraTotal = calcularMora(
-          cuota.totalCuota,
-          prestamo.tasaMora ?? 0,
-          atraso,
-          prestamo.diasGracia
-        );
-
-        const capitalPendiente = cuota.montoCapital;
-        const interesPendiente = cuota.montoInteres;
-        const pagadoAnteriormente = cuota.montoPagado || 0;
-        const faltaDeCuota = cuota.totalCuota - pagadoAnteriormente;
-        const totalNecesario = moraTotal + faltaDeCuota;
-
-        const reparto = distribuirPago(sobrante, moraTotal, interesPendiente, capitalPendiente);
-
-        // Extraer numero_cuota del id compuesto "prestamoId-numeroCuota"
-        const numeroCuota = cuota.numeroCuota;
-
+      if (sobrante === 0 && cuotaActual) {
+        // Registrar visita / abono de 0
         const datos: DatosRegistroPago = {
           prestamoId: prestamo.id,
-          numeroCuota,
+          numeroCuota: cuotaActual.numeroCuota,
           clienteId: cobroSeleccionado.cliente.id,
           fecha: fechaPago,
-          valor: reparto.aplicadoAMora + reparto.aplicadoAInteres + reparto.aplicadoACapital,
-          aMora: reparto.aplicadoAMora,
-          aInteres: reparto.aplicadoAInteres,
-          aCapital: reparto.aplicadoACapital,
-          montoPagadoAnterior: pagadoAnteriormente,
-          totalCuota: cuota.totalCuota,
+          valor: 0,
+          aMora: 0,
+          aInteres: 0,
+          aCapital: 0,
+          montoPagadoAnterior: cuotaActual.montoPagado || 0,
+          totalCuota: cuotaActual.totalCuota,
+          nota: notaPago,
         };
-
         await registrarPago(datos);
-        sobrante -= totalNecesario;
+      } else {
+        for (const cuota of cuotasPendientes) {
+          if (sobrante <= 0) break;
+
+          const atraso = diasDeAtraso(cuota.fechaVencimiento);
+          const moraTotal = calcularMora(
+            cuota.totalCuota,
+            prestamo.tasaMora ?? 0,
+            atraso,
+            prestamo.diasGracia
+          );
+
+          const capitalPendiente = cuota.montoCapital;
+          const interesPendiente = cuota.montoInteres;
+          const pagadoAnteriormente = cuota.montoPagado || 0;
+          const faltaDeCuota = cuota.totalCuota - pagadoAnteriormente;
+          const totalNecesario = moraTotal + faltaDeCuota;
+
+          const reparto = distribuirPago(sobrante, moraTotal, interesPendiente, capitalPendiente);
+          const numeroCuota = cuota.numeroCuota;
+
+          const datos: DatosRegistroPago = {
+            prestamoId: prestamo.id,
+            numeroCuota,
+            clienteId: cobroSeleccionado.cliente.id,
+            fecha: fechaPago,
+            valor: reparto.aplicadoAMora + reparto.aplicadoAInteres + reparto.aplicadoACapital,
+            aMora: reparto.aplicadoAMora,
+            aInteres: reparto.aplicadoAInteres,
+            aCapital: reparto.aplicadoACapital,
+            montoPagadoAnterior: pagadoAnteriormente,
+            totalCuota: cuota.totalCuota,
+            nota: notaPago,
+          };
+
+          await registrarPago(datos);
+          sobrante -= totalNecesario;
+        }
       }
 
       mostrarToast('exito', 'Pago registrado exitosamente.');
@@ -323,7 +342,19 @@ const Cobros: React.FC = () => {
                 />
               </div>
 
-              <div className="modal-resumen-pago">
+              <div className="form-fila" style={{ marginTop: '16px' }}>
+                <label className="form-label">Historia / Nota (Opcional)</label>
+                <textarea 
+                  className="form-input"
+                  style={{ minHeight: '80px', resize: 'vertical' }}
+                  placeholder='Ej. "Este día no estaba en casa", "Abono parcial", etc.'
+                  value={notaPago}
+                  onChange={e => setNotaPago(e.target.value)}
+                  disabled={procesandoPago}
+                />
+              </div>
+
+              <div className="modal-resumen-pago" style={{ marginTop: '16px' }}>
                 <div className="resumen-pago-fila">
                   <span>Cuota actual</span>
                   <span>{formatearMoneda(cobroSeleccionado.montoCuotaActual)}</span>
@@ -346,7 +377,7 @@ const Cobros: React.FC = () => {
               <button
                 className="btn-primario"
                 onClick={registrarPagoHandler}
-                disabled={Number(montoPago) <= 0 || procesandoPago}
+                disabled={Number(montoPago) < 0 || procesandoPago}
               >
                 {procesandoPago ? 'Procesando…' : 'Confirmar Abono'}
               </button>

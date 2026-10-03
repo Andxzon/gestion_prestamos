@@ -34,7 +34,7 @@ export interface Prestamo {
   monto: number;                        // capital inicial / monto a desembolsar
   tasaMensual: number;                  // ej. 0.10 = 10%
   tipoInteres: TipoInteres;
-  plazoEnDias: number;
+  plazoEnSemanas: number;
   fechaInicio: string;                  // ISO date "YYYY-MM-DD"
   comision?: number;                    // monto fijo opcional
   tipoComision?: TipoComision;          // default: descontada_desembolso

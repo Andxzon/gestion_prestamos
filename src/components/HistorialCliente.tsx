@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { Cliente, Prestamo, Cuota, Pago } from '../types';
 import { obtenerPrestamosPorCliente, eliminarPrestamo } from '../data/prestamoRepository';
 import { obtenerCuotasPorPrestamo } from '../data/cuotaRepository';
-import { obtenerPagosPorPrestamo } from '../data/pagoRepository';
+import { obtenerPagosPorPrestamo, eliminarPago } from '../data/pagoRepository';
 import { fechaHoyLocal } from '../logic/calculos';
 import { ArrowLeft, Trash2, X, AlertTriangle } from 'lucide-react';
 import './HistorialCliente.css';
@@ -41,6 +41,7 @@ const HistorialCliente: React.FC<HistorialClienteProps> = ({ cliente, onVolver }
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [prestamoAEliminar, setPrestamoAEliminar] = useState<string | null>(null);
+  const [pagoAEliminar, setPagoAEliminar] = useState<string | null>(null);
   const [eliminando, setEliminando] = useState(false);
 
   const cargar = async () => {
@@ -125,6 +126,20 @@ const HistorialCliente: React.FC<HistorialClienteProps> = ({ cliente, onVolver }
       await cargar(); // Recargar los datos
     } catch (err: any) {
       alert(err.message || 'Error al eliminar el préstamo');
+    } finally {
+      setEliminando(false);
+    }
+  };
+
+  const confirmarEliminarPago = async () => {
+    if (!pagoAEliminar) return;
+    setEliminando(true);
+    try {
+      await eliminarPago(pagoAEliminar);
+      setPagoAEliminar(null);
+      await cargar();
+    } catch (err: any) {
+      alert(err.message || 'Error al eliminar el pago');
     } finally {
       setEliminando(false);
     }
@@ -272,6 +287,8 @@ const HistorialCliente: React.FC<HistorialClienteProps> = ({ cliente, onVolver }
                             <th>Capital</th>
                             <th>Interés</th>
                             <th>Mora</th>
+                            <th>Historia / Nota</th>
+                            <th></th>
                           </tr>
                         </thead>
                         <tbody>
@@ -283,6 +300,16 @@ const HistorialCliente: React.FC<HistorialClienteProps> = ({ cliente, onVolver }
                               <td>{formatCurrency(p.aplicadoAInteres)}</td>
                               <td className={p.aplicadoAMora > 0 ? 'text-danger' : ''}>
                                 {formatCurrency(p.aplicadoAMora)}
+                              </td>
+                              <td>{p.nota || '-'}</td>
+                              <td>
+                                <button 
+                                  className="btn-peligro btn-peligro-sm" 
+                                  onClick={() => setPagoAEliminar(p.id)}
+                                  title="Quitar abono"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
                               </td>
                             </tr>
                           ))}
@@ -314,6 +341,28 @@ const HistorialCliente: React.FC<HistorialClienteProps> = ({ cliente, onVolver }
               <button className="btn-secundario" onClick={() => setPrestamoAEliminar(null)} disabled={eliminando}>Cancelar</button>
               <button className="btn-peligro" onClick={confirmarEliminar} disabled={eliminando}>
                 {eliminando ? 'Eliminando…' : 'Sí, eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pagoAEliminar && (
+        <div className="overlay">
+          <div className="modal-formulario" style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h2 className="modal-titulo" style={{ color: '#ef4444' }}>
+                <AlertTriangle size={20} /> Eliminar Abono
+              </h2>
+              <button className="modal-cerrar" onClick={() => setPagoAEliminar(null)}><X size={18} /></button>
+            </div>
+            <div className="modal-cuerpo">
+              <p>¿Estás seguro de que deseas quitar este abono? El saldo y estado de la cuota se recalcularán automáticamente. <strong>Esta acción no se puede deshacer</strong>.</p>
+            </div>
+            <div className="modal-pie">
+              <button className="btn-secundario" onClick={() => setPagoAEliminar(null)} disabled={eliminando}>Cancelar</button>
+              <button className="btn-peligro" onClick={confirmarEliminarPago} disabled={eliminando}>
+                {eliminando ? 'Quitando…' : 'Sí, quitar abono'}
               </button>
             </div>
           </div>

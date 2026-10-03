@@ -5,8 +5,7 @@ import { obtenerClientes } from '../data/clienteRepository';
 import { calcularResumenPrestamo, generarCuotasBase, formatearMoneda, formatearFecha, fechaHoyLocal } from '../logic/calculos';
 import {
   Banknote, Plus, Calendar, Clock, TrendingUp, Trash2,
-  X, AlertTriangle, CheckCircle, XCircle, RefreshCw,
-  Info
+  X, AlertTriangle, CheckCircle, XCircle, RefreshCw
 } from 'lucide-react';
 import './Prestamos.css';
 
@@ -16,7 +15,7 @@ const FORM_VACIO = {
   monto: 500000 as number | '',
   tasaMensual: 10 as number | '', // Porcentaje visual (ej. 10 para 10%)
   tipoInteres: 'simple' as TipoInteres,
-  plazoEnDias: 30 as number | '',
+  plazoEnSemanas: 4 as number | '',
   fechaInicio: fechaHoyLocal(),
   comision: 0 as number | '',
   tipoComision: 'descontada_desembolso' as TipoComision,
@@ -69,16 +68,16 @@ const Prestamos: React.FC = () => {
   // ── Vista Previa en Vivo ───────────────────────────────────
   const resumen = useMemo(() => {
     const monto = Number(form.monto);
-    const plazoEnDias = Number(form.plazoEnDias);
+    const plazoEnSemanas = Number(form.plazoEnSemanas);
     const tasaMensual = Number(form.tasaMensual);
     const comision = Number(form.comision);
 
-    if (monto <= 0 || plazoEnDias <= 0 || tasaMensual < 0) return null;
+    if (monto <= 0 || plazoEnSemanas <= 0 || tasaMensual < 0) return null;
     return calcularResumenPrestamo({
       monto,
       tasaMensual: tasaMensual / 100, // Convertir 10 → 0.10
       tipoInteres: form.tipoInteres,
-      plazoEnDias,
+      plazoEnSemanas,
       fechaInicio: form.fechaInicio,
       comision,
       tipoComision: form.tipoComision,
@@ -136,10 +135,10 @@ const Prestamos: React.FC = () => {
       // Generar cuotas en memoria (lógica sin cambios)
       const cuotasGeneradas = generarCuotasBase(
         resumen.capitalBase,
-        resumen.cuotaDiaria,
-        resumen.tasaDiariaEfectiva,
+        resumen.cuotaSemanal,
+        resumen.tasaSemanalEfectiva,
         form.tipoInteres,
-        Number(form.plazoEnDias),
+        Number(form.plazoEnSemanas),
         form.fechaInicio
       );
 
@@ -150,7 +149,7 @@ const Prestamos: React.FC = () => {
           monto: Number(form.monto),
           tasaMensual: Number(form.tasaMensual) / 100, // decimal para la BD
           tipoInteres: form.tipoInteres,
-          plazoEnDias: Number(form.plazoEnDias),
+          plazoEnSemanas: Number(form.plazoEnSemanas),
           fechaInicio: form.fechaInicio,
           comision: form.comision === '' ? undefined : Number(form.comision),
           tipoComision: form.tipoComision,
@@ -244,7 +243,7 @@ const Prestamos: React.FC = () => {
                 <span className="prestamo-cliente">{getNombreCliente(p.clienteId)}</span>
                 <div className="prestamo-detalles">
                    <span className="prestamo-detalle-item"><Calendar size={13} strokeWidth={2} /> {formatearFecha(p.fechaInicio)}</span>
-                   <span className="prestamo-detalle-item"><Clock size={13} strokeWidth={2} /> {p.plazoEnDias} días</span>
+                   <span className="prestamo-detalle-item"><Clock size={13} strokeWidth={2} /> {p.plazoEnSemanas} semanas</span>
                    <span className="prestamo-detalle-item"><TrendingUp size={13} strokeWidth={2} /> {(p.tasaMensual * 100).toFixed(1)}% {p.tipoInteres}</span>
                 </div>
               </div>
@@ -298,9 +297,9 @@ const Prestamos: React.FC = () => {
                       value={form.monto} onChange={e => setForm({...form, monto: e.target.value === '' ? '' : Number(e.target.value)})} />
                   </div>
                   <div className="form-fila">
-                    <label className="form-label">Plazo (días)</label>
+                    <label className="form-label">Plazo (semanas)</label>
                     <input type="number" className="form-input" min="1" 
-                      value={form.plazoEnDias} onChange={e => setForm({...form, plazoEnDias: e.target.value === '' ? '' : Number(e.target.value)})} />
+                      value={form.plazoEnSemanas} onChange={e => setForm({...form, plazoEnSemanas: e.target.value === '' ? '' : Number(e.target.value)})} />
                   </div>
                 </div>
 
@@ -350,7 +349,7 @@ const Prestamos: React.FC = () => {
                 
                 <div className="form-grid-2">
                   <div className="form-fila">
-                    <label className="form-label">Fecha de Inicio</label>
+                    <label className="form-label">Fecha del 1er Cobro</label>
                     <input type="date" className="form-input" 
                       value={form.fechaInicio} onChange={e => setForm({...form, fechaInicio: e.target.value})} />
                   </div>
@@ -372,8 +371,8 @@ const Prestamos: React.FC = () => {
                         <span className="resumen-valor">{formatearMoneda(resumen.totalAPagar)}</span>
                       </div>
                       <div className="resumen-item" style={{ gridColumn: 'span 2' }}>
-                        <span className="resumen-label">CUOTA DIARIA FIJA</span>
-                        <span className="resumen-valor destacado">{formatearMoneda(resumen.cuotaDiaria)}</span>
+                        <span className="resumen-label">CUOTA SEMANAL FIJA</span>
+                        <span className="resumen-valor destacado">{formatearMoneda(resumen.cuotaSemanal)}</span>
                       </div>
                       <div className="resumen-item">
                         <span className="resumen-label">Intereses totales</span>
@@ -387,7 +386,7 @@ const Prestamos: React.FC = () => {
                         <div className="resumen-item" style={{ gridColumn: 'span 2', marginTop: '8px', borderTop: '1px solid var(--color-borde)', paddingTop: '8px' }}>
                           <span className="resumen-label">Mora por día de atraso (sobre una cuota)</span>
                           <span className="resumen-valor" style={{ color: '#f87171' }}>
-                            {formatearMoneda(resumen.cuotaDiaria * (Number(form.tasaMora) / 100))}
+                            {formatearMoneda(resumen.cuotaSemanal * (Number(form.tasaMora) / 100))}
                           </span>
                         </div>
                       )}

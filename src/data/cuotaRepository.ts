@@ -35,7 +35,7 @@ export async function obtenerCuotasPorPrestamo(prestamoId: string): Promise<Cuot
   ] = await Promise.all([
     supabase.from('cuota').select('*').eq('id_prestamo', prestamoId).order('numero_cuota'),
     supabase.from('pago').select('numero_cuota, a_capital, a_interes').eq('id_prestamo', prestamoId),
-    supabase.from('prestamo').select('monto, tasa_interes, tipo_interes, plazo_dias, comision, comision_modo').eq('id_prestamo', prestamoId).single()
+    supabase.from('prestamo').select('monto, tasa_interes, tipo_interes, plazo_semanas, comision, comision_modo').eq('id_prestamo', prestamoId).single()
   ]);
 
   if (errC) throw new Error(`Error al obtener cuotas: ${errC.message}`);
@@ -47,7 +47,7 @@ export async function obtenerCuotasPorPrestamo(prestamoId: string): Promise<Cuot
     monto: p.monto,
     tasaMensual: p.tasa_interes,
     tipoInteres: p.tipo_interes,
-    plazoEnDias: p.plazo_dias,
+    plazoEnSemanas: p.plazo_semanas,
     fechaInicio: '2020-01-01', // no importa para el desglose
     comision: p.comision || 0,
     tipoComision: p.comision_modo === 'sumada' ? 'sumada_deuda' : 'descontada_desembolso'
@@ -55,10 +55,10 @@ export async function obtenerCuotasPorPrestamo(prestamoId: string): Promise<Cuot
   
   const cuotasBase = generarCuotasBase(
     resumen.capitalBase,
-    resumen.cuotaDiaria,
-    resumen.tasaDiariaEfectiva,
+    resumen.cuotaSemanal,
+    resumen.tasaSemanalEfectiva,
     p.tipo_interes,
-    p.plazo_dias,
+    p.plazo_semanas,
     '2020-01-01'
   );
   const cuotasMap = new Map(cuotasBase.map(c => [c.numeroCuota, c]));
