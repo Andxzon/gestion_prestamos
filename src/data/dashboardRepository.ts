@@ -52,17 +52,16 @@ export interface Proyeccion {
 export async function getDashboardStats(): Promise<DashboardStats> {
   const hoy = fechaHoyLocal();
 
-  // 1. Saldo total pendiente (desde vista v_saldo_prestamo)
-  const { data: saldoData, error: errSaldo } = await supabase
-    .from('v_saldo_prestamo')
-    .select('saldo_pendiente');
+  // 1. Saldo total pendiente (Total esperado - Total abonado)
+  const { data: cuotasData, error: errCuotas } = await supabase.from('cuota').select('valor_cuota, estado');
+  const { data: pagosAll, error: errPagosAll } = await supabase.from('pago').select('a_capital, a_interes, a_mora');
 
-  if (errSaldo) throw new Error(`Error al obtener saldo: ${errSaldo.message}`);
+  if (errCuotas) throw new Error(`Error al obtener cuotas: ${errCuotas.message}`);
+  if (errPagosAll) throw new Error(`Error al obtener pagos: ${errPagosAll.message}`);
 
-  const saldoPendiente = (saldoData ?? []).reduce(
-    (sum: number, row: any) => sum + (row.saldo_pendiente ?? 0),
-    0
-  );
+  const totalEsperado = (cuotasData ?? []).reduce((sum, c) => sum + (c.valor_cuota ?? 0), 0);
+  const totalPagado = (pagosAll ?? []).reduce((sum, p) => sum + (p.a_capital ?? 0) + (p.a_interes ?? 0) + (p.a_mora ?? 0), 0);
+  const saldoPendiente = Math.max(0, totalEsperado - totalPagado);
 
   // 2. Cobro hoy: cuotas vencidas hoy o antes, menos lo ya pagado
   const { data: cobroData, error: errCobro } = await supabase
@@ -285,20 +284,15 @@ export async function obtenerReporteClientes(): Promise<ReporteClienteRow[]> {
     supabase.from('v_saldo_prestamo').select('id_prestamo, id_cliente, saldo_pendiente'),
     supabase.from('v_cuota_atrasada').select('id_prestamo'),
     supabase.from('pago').select('id_prestamo, fecha, a_capital, a_interes, a_mora').order('fecha', { ascending: false }),
+    supabase.from('cuota').select('id_prestamo, valor_cuota'),
   ]);
 
   if (errC) throw new Error(`Error clientes: ${errC.message}`);
   if (errP) throw new Error(`Error préstamos: ${errP.message}`);
-  if (errS) throw new Error(`Error saldos: ${errS.message}`);
   if (errA) throw new Error(`Error atrasadas: ${errA.message}`);
   if (errPg) throw new Error(`Error pagos: ${errPg.message}`);
 
   const pMap = new Map((prestamos ?? []).map((p: any) => [p.id_prestamo, p.id_cliente]));
-
-  const saldoPorPrestamo = new Map<string, number>();
-  for (const s of saldos ?? []) {
-    saldoPorPrestamo.set((s as any).id_prestamo, (s as any).saldo_pendiente ?? 0);
-  }
 
   const atrasadasPorCliente = new Map<string, number>();
   for (const a of atrasadas ?? []) {
@@ -306,6 +300,12 @@ export async function obtenerReporteClientes(): Promise<ReporteClienteRow[]> {
     if (cid) {
       atrasadasPorCliente.set(cid, (atrasadasPorCliente.get(cid) ?? 0) + 1);
     }
+  }
+
+  const { data: cuotasData, error: errCuotas } = await supabase.from('cuota').select('id_prestamo, valor_cuota');
+  const totalEsperadoPorPrestamo = new Map<string, number>();
+  for (const c of cuotasData ?? []) {
+    totalEsperadoPorPrestamo.set(c.id_prestamo, (totalEsperadoPorPrestamo.get(c.id_prestamo) ?? 0) + c.valor_cuota);
   }
 
   const pagosPorPrestamo = new Map<string, { ultimo: string; cap: number; int: number; mora: number }>();
@@ -327,16 +327,14 @@ export async function obtenerReporteClientes(): Promise<ReporteClienteRow[]> {
     )[0];
 
     const valorPrestamo = prestamosCliente.reduce((sum: number, p: any) => sum + (p.monto ?? 0), 0);
-    const saldoPendiente = prestamosCliente.reduce(
-      (sum: number, p: any) => sum + (saldoPorPrestamo.get(p.id_prestamo) ?? 0),
-      0
-    );
 
     let interesesPagados = 0;
     let interesesMora = 0;
     let totalAbonado = 0;
+    let totalEsperado = 0;
     
     prestamosCliente.forEach((p: any) => {
+      totalEsperado += (totalEsperadoPorPrestamo.get(p.id_prestamo) ?? 0);
       const stats = pagosPorPrestamo.get(p.id_prestamo);
       if (stats) {
         interesesPagados += stats.int;
@@ -344,6 +342,8 @@ export async function obtenerReporteClientes(): Promise<ReporteClienteRow[]> {
         totalAbonado += stats.cap + stats.int + stats.mora;
       }
     });
+
+    const saldoPendiente = Math.max(0, totalEsperado - totalAbonado);
 
     const cuotasAtrasadas = atrasadasPorCliente.get(cli.id_cliente) ?? 0;
 
