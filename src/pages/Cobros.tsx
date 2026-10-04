@@ -20,6 +20,7 @@ interface CobroVisual {
   prestamo: Prestamo;
   cuotasPendientes: Cuota[];
   cuotaActual?: Cuota;
+  cantidadCuotasExigibles: number;
   montoCuotaActual: number;
   diasAtrasoActual: number;
   moraActual: number;
@@ -65,6 +66,12 @@ const Cobros: React.FC = () => {
             .filter(c => !c.pagada)
             .sort((a, b) => a.numeroCuota - b.numeroCuota);
           const cuotaActual = pendientes.length > 0 ? pendientes[0] : undefined;
+          // Las cuotas vencidas se acumulan; al llegar la siguiente fecha semanal,
+          // también se suma esa nueva cuota al total que debe cobrarse.
+          const vencidasOHoy = pendientes.filter(c => c.fechaVencimiento <= hoy);
+          const cuotasExigibles = vencidasOHoy.length > 0
+            ? vencidasOHoy
+            : cuotaActual ? [cuotaActual] : [];
 
           let estado: EstadoCobro = 'al-dia';
           let diasAtrasoActual = 0;
@@ -73,19 +80,25 @@ const Cobros: React.FC = () => {
           let montoCuotaActual = 0;
 
           if (cuotaActual) {
-            diasAtrasoActual = diasDeAtraso(cuotaActual.fechaVencimiento);
-            moraActual = calcularMora(
-              cuotaActual.totalCuota,
-              prestamo.tasaMora ?? 0,
-              diasAtrasoActual,
-              prestamo.diasGracia
+            montoCuotaActual = cuotasExigibles.reduce(
+              (total, cuota) => total + Math.max(0, cuota.totalCuota - (cuota.montoPagado || 0)),
+              0
             );
-            montoCuotaActual = cuotaActual.totalCuota - (cuotaActual.montoPagado || 0);
+            moraActual = cuotasExigibles.reduce((total, cuota) => {
+              const diasAtraso = diasDeAtraso(cuota.fechaVencimiento);
+              diasAtrasoActual = Math.max(diasAtrasoActual, diasAtraso);
+              return total + calcularMora(
+                cuota.totalCuota,
+                prestamo.tasaMora ?? 0,
+                diasAtraso,
+                prestamo.diasGracia
+              );
+            }, 0);
             totalExigible = montoCuotaActual + moraActual;
 
             if (diasAtrasoActual > 0) {
               estado = 'atrasado';
-            } else if (cuotaActual.fechaVencimiento === hoy) {
+            } else if (cuotasExigibles.some(c => c.fechaVencimiento === hoy)) {
               estado = 'pendiente-hoy';
             }
           }
@@ -95,6 +108,7 @@ const Cobros: React.FC = () => {
             prestamo,
             cuotasPendientes: pendientes,
             cuotaActual,
+            cantidadCuotasExigibles: cuotasExigibles.length,
             montoCuotaActual,
             diasAtrasoActual,
             moraActual,
@@ -276,7 +290,11 @@ const Cobros: React.FC = () => {
                   {cobro.cuotaActual ? (
                     <>
                       <span className="prestamo-detalle-item"><Calendar size={13} strokeWidth={2} /> Vence: {formatearFecha(cobro.cuotaActual.fechaVencimiento)}</span>
-                      <span className="prestamo-detalle-item"><Hash size={13} strokeWidth={2} /> Cuota {cobro.cuotaActual.numeroCuota}</span>
+                      <span className="prestamo-detalle-item"><Hash size={13} strokeWidth={2} />
+                        {cobro.cantidadCuotasExigibles > 1
+                          ? `${cobro.cantidadCuotasExigibles} cuotas acumuladas (desde la ${cobro.cuotaActual.numeroCuota})`
+                          : `Cuota ${cobro.cuotaActual.numeroCuota}`}
+                      </span>
                     </>
                   ) : (
                     <span>Todas las cuotas generadas están pagadas.</span>
@@ -361,7 +379,7 @@ const Cobros: React.FC = () => {
 
               <div className="modal-resumen-pago" style={{ marginTop: '16px' }}>
                 <div className="resumen-pago-fila">
-                  <span>Cuota actual</span>
+                  <span>{cobroSeleccionado.cantidadCuotasExigibles > 1 ? 'Cuotas acumuladas' : 'Cuota actual'}</span>
                   <span>{formatearMoneda(cobroSeleccionado.montoCuotaActual)}</span>
                 </div>
                 {cobroSeleccionado.moraActual > 0 && (
