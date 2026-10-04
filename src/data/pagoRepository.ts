@@ -77,6 +77,7 @@ export async function registrarPago(
 
       // ── Paso 1: Insertar el pago ──────────────────────────────
       const { data: pagoData, error: errPago } = await supabase.from('pago').insert({
+        id_cliente: datos.clienteId,
         id_prestamo: datos.prestamoId,
         numero_cuota: datos.numeroCuota,
         fecha: datos.fecha,
@@ -88,8 +89,14 @@ export async function registrarPago(
       }).select().single();
 
       if (errPago) {
-
-        throw new Error(`Error al registrar el pago: ${errPago.message}`);
+        const diagnostico = [
+          errPago.code ? `código ${errPago.code}` : null,
+          errPago.details,
+          errPago.hint ? `Pista: ${errPago.hint}` : null,
+        ].filter(Boolean).join(' | ');
+        throw new Error(
+          `Error al registrar el pago: ${errPago.message}${diagnostico ? ` (${diagnostico})` : ''}`
+        );
       }
       
       const idPago = String(pagoData.id_pago);

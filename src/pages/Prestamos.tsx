@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import type { Prestamo, Cliente, TipoInteres, TipoComision } from '../types';
+import type { Prestamo, Cliente, TipoInteres, TipoComision, ModoInteres } from '../types';
 import { obtenerPrestamos, guardarPrestamo, obtenerPrestamoActivo, eliminarPrestamo } from '../data/prestamoRepository';
 import { obtenerClientes } from '../data/clienteRepository';
 import { calcularResumenPrestamo, generarCuotasBase, formatearMoneda, formatearFecha, fechaHoyLocal } from '../logic/calculos';
@@ -14,6 +14,7 @@ const FORM_VACIO = {
   clienteId: '',
   monto: 500000 as number | '',
   tasaMensual: 10 as number | '', // Porcentaje visual (ej. 10 para 10%)
+  modoInteres: 'mensual' as ModoInteres,
   tipoInteres: 'simple' as TipoInteres,
   plazoEnSemanas: 4 as number | '',
   fechaInicio: fechaHoyLocal(),
@@ -76,6 +77,7 @@ const Prestamos: React.FC = () => {
     return calcularResumenPrestamo({
       monto,
       tasaMensual: tasaMensual / 100, // Convertir 10 → 0.10
+      modoInteres: form.modoInteres,
       tipoInteres: form.tipoInteres,
       plazoEnSemanas,
       fechaInicio: form.fechaInicio,
@@ -148,7 +150,8 @@ const Prestamos: React.FC = () => {
           clienteId: form.clienteId,
           monto: Number(form.monto),
           tasaMensual: Number(form.tasaMensual) / 100, // decimal para la BD
-          tipoInteres: form.tipoInteres,
+          tipoInteres: form.modoInteres === 'fijo' ? 'simple' : form.tipoInteres,
+          modoInteres: form.modoInteres,
           plazoEnSemanas: Number(form.plazoEnSemanas),
           fechaInicio: form.fechaInicio,
           comision: form.comision === '' ? undefined : Number(form.comision),
@@ -244,7 +247,7 @@ const Prestamos: React.FC = () => {
                 <div className="prestamo-detalles">
                    <span className="prestamo-detalle-item"><Calendar size={13} strokeWidth={2} /> {formatearFecha(p.fechaInicio)}</span>
                    <span className="prestamo-detalle-item"><Clock size={13} strokeWidth={2} /> {p.plazoEnSemanas} semanas</span>
-                   <span className="prestamo-detalle-item"><TrendingUp size={13} strokeWidth={2} /> {(p.tasaMensual * 100).toFixed(1)}% {p.tipoInteres}</span>
+                   <span className="prestamo-detalle-item"><TrendingUp size={13} strokeWidth={2} /> {(p.tasaMensual * 100).toFixed(1)}% {p.modoInteres === 'fijo' ? 'fijo total' : 'mensual'}</span>
                 </div>
               </div>
               <div className="prestamo-acciones">
@@ -305,18 +308,31 @@ const Prestamos: React.FC = () => {
 
                 <div className="form-grid-2">
                   <div className="form-fila">
-                    <label className="form-label">Tasa Mensual (%)</label>
+                    <label className="form-label">{form.modoInteres === 'fijo' ? 'Interés fijo total del préstamo (%)' : 'Tasa mensual (%)'}</label>
                     <input type="number" className="form-input" min="0" step="0.1"
                       value={form.tasaMensual} onChange={e => setForm({...form, tasaMensual: e.target.value === '' ? '' : Number(e.target.value)})} />
                   </div>
                   <div className="form-fila">
-                    <label className="form-label">Tipo de Interés</label>
+                    <label className="form-label">Modalidad de interés</label>
+                    <select className="form-select" value={form.modoInteres} onChange={e => {
+                      const modoInteres = e.target.value as ModoInteres;
+                      setForm({...form, modoInteres, ...(modoInteres === 'fijo' ? { tipoInteres: 'simple' as TipoInteres } : {})});
+                    }}>
+                      <option value="mensual">Porcentaje mensual</option>
+                      <option value="fijo">Porcentaje fijo por todo el préstamo</option>
+                    </select>
+                  </div>
+                </div>
+
+                {form.modoInteres === 'mensual' && (
+                  <div className="form-fila">
+                    <label className="form-label">Cálculo mensual</label>
                     <select className="form-select" value={form.tipoInteres} onChange={e => setForm({...form, tipoInteres: e.target.value as TipoInteres})}>
                       <option value="simple">Simple</option>
                       <option value="compuesto">Compuesto</option>
                     </select>
                   </div>
-                </div>
+                )}
 
                 <div className="form-grid-2">
                   <div className="form-fila">

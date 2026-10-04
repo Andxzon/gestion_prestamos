@@ -19,6 +19,7 @@ export interface Cliente {
 }
 
 export type TipoInteres = 'simple' | 'compuesto';
+export type ModoInteres = 'fijo' | 'mensual';
 
 export type EstadoPrestamo = 'activo' | 'pagado' | 'vencido';
 
@@ -34,6 +35,7 @@ export interface Prestamo {
   monto: number;                        // capital inicial / monto a desembolsar
   tasaMensual: number;                  // ej. 0.10 = 10%
   tipoInteres: TipoInteres;
+  modoInteres: ModoInteres;             // fijo = porcentaje total del préstamo; mensual = porcentaje por mes
   plazoEnSemanas: number;
   fechaInicio: string;                  // ISO date "YYYY-MM-DD"
   comision?: number;                    // monto fijo opcional

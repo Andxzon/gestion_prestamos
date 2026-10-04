@@ -3,7 +3,7 @@
 // Todas las fórmulas del negocio viven aquí.
 // ============================================================
 
-import type { TipoInteres, TipoComision } from '../types';
+import type { TipoInteres, TipoComision, ModoInteres } from '../types';
 
 // ────────────────────────────────────────────────────────────
 // TIPOS DE RESULTADO
@@ -54,6 +54,7 @@ export interface CuotaGenerada {
 export function calcularResumenPrestamo(params: {
   monto: number;
   tasaMensual: number;
+  modoInteres?: ModoInteres;
   tipoInteres: TipoInteres;
   plazoEnSemanas: number;
   fechaInicio: string;
@@ -61,6 +62,7 @@ export function calcularResumenPrestamo(params: {
   tipoComision?: TipoComision;
 }): ResumenPrestamo {
   const { monto, tasaMensual, tipoInteres, plazoEnSemanas, fechaInicio } = params;
+  const modoInteres = params.modoInteres ?? 'mensual';
   const comision = params.comision ?? 0;
   const tipoComision = params.tipoComision ?? 'descontada_desembolso';
 
@@ -81,6 +83,11 @@ export function calcularResumenPrestamo(params: {
     tasaSemanalEfectiva = 0;
     cuotaSemanal = capitalBase / plazoEnSemanas;
     interesTotal = 0;
+  } else if (modoInteres === 'fijo') {
+    // La tasa representa el interés total del préstamo, independiente del plazo.
+    tasaSemanalEfectiva = tasaMensual / plazoEnSemanas;
+    interesTotal = capitalBase * tasaMensual;
+    cuotaSemanal = (capitalBase + interesTotal) / plazoEnSemanas;
   } else if (tipoInteres === 'simple') {
     tasaSemanalEfectiva = tasaMensual / 4;
     interesTotal = capitalBase * tasaMensual * (plazoEnSemanas / 4);

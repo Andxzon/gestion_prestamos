@@ -25,6 +25,7 @@ function mapRowToPrestamo(row: Record<string, any>): Prestamo {
     // El campo tasaMensual en el dominio también es decimal.
     tasaMensual: row.tasa_interes as number,
     tipoInteres: row.tipo_interes as 'simple' | 'compuesto',
+    modoInteres: (row.modo_interes as 'fijo' | 'mensual') || 'mensual',
     plazoEnSemanas: row.plazo_semanas as number,
     fechaInicio: row.fecha_inicio as string,
     comision: row.comision != null ? (row.comision as number) : undefined,
@@ -109,6 +110,7 @@ export async function guardarPrestamo(
         monto: datos.monto,
         tasa_interes: datos.tasaMensual,
         tipo_interes: datos.tipoInteres,
+        modo_interes: datos.modoInteres,
         fecha_inicio: datos.fechaInicio,
         plazo_semanas: datos.plazoEnSemanas,
         comision: datos.comision || 0,
@@ -206,6 +208,7 @@ export async function actualizarPrestamo(prestamo: Prestamo): Promise<void> {
           monto: prestamo.monto,
           tasa_interes: prestamo.tasaMensual,
           tipo_interes: prestamo.tipoInteres,
+          modo_interes: prestamo.modoInteres ?? 'mensual',
           fecha_inicio: prestamo.fechaInicio,
           plazo_semanas: prestamo.plazoEnSemanas,
           comision: prestamo.comision ?? null,
