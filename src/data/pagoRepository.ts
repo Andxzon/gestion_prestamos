@@ -13,8 +13,8 @@ import { withOfflineProtection } from '../lib/offlineWrapper';
 
 function mapRowToPago(row: Record<string, any>): Pago {
   return {
-    id: row.id_pago as string,
-    prestamoId: row.id_prestamo as string,
+    id: String(row.id_pago),
+    prestamoId: String(row.id_prestamo),
     cuotaId: `${row.id_prestamo}-${row.numero_cuota}`,
     clienteId: row.id_cliente ?? '',
     fecha: row.fecha as string,
@@ -77,7 +77,6 @@ export async function registrarPago(
 
       // ── Paso 1: Insertar el pago ──────────────────────────────
       const { data: pagoData, error: errPago } = await supabase.from('pago').insert({
-        id_pago: pagoId,
         id_prestamo: datos.prestamoId,
         numero_cuota: datos.numeroCuota,
         fecha: datos.fecha,
@@ -93,7 +92,7 @@ export async function registrarPago(
         throw new Error(`Error al registrar el pago: ${errPago.message}`);
       }
       
-      const idPago = pagoData.id_pago as string;
+      const idPago = String(pagoData.id_pago);
 
       // ── Paso 2: Actualizar estado de la cuota ────────────────
       const nuevoMontoPagado = datos.montoPagadoAnterior + datos.aCapital + datos.aInteres;
