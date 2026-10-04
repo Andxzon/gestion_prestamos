@@ -118,6 +118,33 @@ export async function getPendingOperations(): Promise<QueueEntry[]> {
   return all.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 }
 
+/** Lee la versión más reciente de una operación (puede haber cambiado durante un replay). */
+export async function getOperation(id: string): Promise<QueueEntry | undefined> {
+  return wrapTransaction('readonly', (store) => store.get(id));
+}
+
+/** Sustituye un ID temporal por el ID que asignó la base de datos en operaciones pendientes. */
+export async function remapPendingId(temporaryId: string, serverId: string): Promise<void> {
+  if (!temporaryId || temporaryId === serverId) return;
+  const all = await getAllOperations();
+
+  for (const entry of all) {
+    if (entry.status !== 'pending') continue;
+    const replace = (value: any): any => {
+      if (value === temporaryId) return serverId;
+      if (Array.isArray(value)) return value.map(replace);
+      if (value && typeof value === 'object') {
+        return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, replace(item)]));
+      }
+      return value;
+    };
+
+    entry.payload = replace(entry.payload);
+    if (entry.lwwKeyValue === temporaryId) entry.lwwKeyValue = serverId;
+    await wrapTransaction('readwrite', (store) => store.put(entry));
+  }
+}
+
 /** Obtener TODAS las operaciones (cualquier estado). */
 export async function getAllOperations(): Promise<QueueEntry[]> {
   const all = await wrapGetAll((store) => store.getAll());

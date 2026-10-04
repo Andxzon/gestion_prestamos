@@ -9,12 +9,14 @@ import { supabase } from '../lib/supabaseClient';
 import type { Cliente, Referencia } from '../types';
 import { fechaHoyLocal } from '../logic/calculos';
 import { withOfflineProtection } from '../lib/offlineWrapper';
+import { remapPendingId } from '../lib/offlineQueue';
+import { isReplaying } from '../lib/syncState';
 
 // ── Helpers de mapeo ──────────────────────────────────────────
 
 function mapRowToCliente(row: Record<string, any>, refs: Referencia[]): Cliente {
   return {
-    id: row.id_cliente as string,
+    id: String(row.id_cliente),
     nombre: row.nombre as string,
     telefono: row.telefono as string,
     direccion: row.direccion as string,
@@ -97,7 +99,6 @@ export async function guardarCliente(
 
     execute: async () => {
       const { data: cliData, error: errC } = await supabase.from('cliente').insert({
-        id_cliente: clienteId,
         nombre: datos.nombre,
         telefono: datos.telefono,
         direccion: datos.direccion,
@@ -106,7 +107,12 @@ export async function guardarCliente(
 
       if (errC) throw new Error(`Error al guardar cliente: ${errC.message}`);
 
-      const id = cliData.id_cliente as string;
+      const id = String(cliData.id_cliente);
+
+      // En replay, otros registros pendientes pueden apuntar al ID local temporal.
+      if (isReplaying() && _offlineId) {
+        await remapPendingId(_offlineId, id);
+      }
 
       if (datos.referencias.length > 0) {
         const { error: errR } = await supabase.from('referencia').insert(

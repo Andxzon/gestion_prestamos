@@ -11,13 +11,15 @@
 import { supabase } from '../lib/supabaseClient';
 import type { Cuota, Prestamo, EstadoPrestamo } from '../types';
 import { withOfflineProtection } from '../lib/offlineWrapper';
+import { remapPendingId } from '../lib/offlineQueue';
+import { isReplaying } from '../lib/syncState';
 
 // ── Helpers de mapeo ──────────────────────────────────────────
 
 function mapRowToPrestamo(row: Record<string, any>): Prestamo {
   return {
-    id: row.id_prestamo as string,
-    clienteId: row.id_cliente as string,
+    id: String(row.id_prestamo),
+    clienteId: String(row.id_cliente),
     monto: row.monto as number,
     // DB guarda en decimal → la pantalla muestra decimal (p.ej. 0.10 = 10%)
     // El campo tasaMensual en el dominio también es decimal.
@@ -103,7 +105,6 @@ export async function guardarPrestamo(
     execute: async () => {
       // 1. Insertar el préstamo
       const { data: prestamoData, error: errP } = await supabase.from('prestamo').insert({
-        id_prestamo: prestamoId,
         id_cliente: datos.clienteId,
         monto: datos.monto,
         tasa_interes: datos.tasaMensual,
@@ -126,7 +127,11 @@ export async function guardarPrestamo(
         throw new Error(`Error al crear el préstamo: ${errP.message}`);
       }
 
-      const id = prestamoData.id_prestamo as string;
+      const id = String(prestamoData.id_prestamo);
+
+      if (isReplaying() && _offlineId) {
+        await remapPendingId(_offlineId, id);
+      }
       const nuevo: Prestamo = {
         ...datos,
         id,

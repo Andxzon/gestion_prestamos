@@ -6,6 +6,7 @@
 
 import {
   getPendingOperations,
+  getOperation,
   markSynced,
   markFailed,
   markSyncing,
@@ -112,7 +113,12 @@ export async function syncNow(): Promise<void> {
     // Activar modo replay para que las llamadas no se vuelvan a encolar
     enterReplay();
 
-    for (const entry of pending) {
+    for (const queuedEntry of pending) {
+      // Recargar: una inserción anterior puede haber reemplazado IDs temporales
+      // en operaciones dependientes que ya estaban en la lista inicial.
+      const entry = await getOperation(queuedEntry.id);
+      if (!entry || entry.status !== 'pending') continue;
+
       // 1. Verificar si seguimos online (puede caerse en medio)
       if (!navigator.onLine) {
         console.warn('[Sync] Conexión perdida durante sincronización. Abortando.');
