@@ -77,7 +77,6 @@ export async function registrarPago(
 
       // ── Paso 1: Insertar el pago ──────────────────────────────
       const { data: pagoData, error: errPago } = await supabase.from('pago').insert({
-        id_cliente: datos.clienteId,
         id_prestamo: datos.prestamoId,
         numero_cuota: datos.numeroCuota,
         fecha: datos.fecha,
