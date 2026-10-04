@@ -206,7 +206,12 @@ const Cobros: React.FC = () => {
         }
       }
 
-      mostrarToast('exito', 'Pago registrado exitosamente.');
+      mostrarToast(
+        'exito',
+        Number(montoPago) === 0
+          ? 'Constancia registrada: el cliente no pagó ese día.'
+          : 'Pago registrado exitosamente.'
+      );
       cerrarModal();
       await recargarDatos();
     } catch (err: any) {

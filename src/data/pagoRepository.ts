@@ -84,7 +84,7 @@ export async function registrarPago(
         a_mora: datos.aMora,
         a_interes: datos.aInteres,
         a_capital: datos.aCapital,
-        nota: datos.nota,
+        nota: datos.valor === 0 ? (datos.nota?.trim() || 'Sin pago') : datos.nota,
       }).select().single();
 
       if (errPago) {
