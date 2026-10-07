@@ -10,6 +10,8 @@ export interface DashboardStats {
   gananciaTotal: number;
   cobroHoy: number;
   clientesAtrasadosCount: number;
+  desgloseGanancia: { nombre: string; monto: number }[];
+  desgloseCobroHoy: { nombre: string; monto: number }[];
 }
 
 export interface ClienteAtrasado {
@@ -74,6 +76,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
   // Fetch pagos for those cuotas to subtract what is already paid
   let cobroHoy = 0;
+  const cobroPorPrestamo = new Map<string, number>();
   if (cobroData && cobroData.length > 0) {
     const prestamoIds = Array.from(new Set(cobroData.map(c => c.id_prestamo)));
     const { data: pagosData } = await supabase
@@ -91,33 +94,57 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     cobroHoy = cobroData.reduce((sum, c) => {
       const key = `${c.id_prestamo}-${c.numero_cuota}`;
       const pagado = pagosMap.get(key) ?? 0;
-      return sum + (c.valor_cuota - pagado);
+      const pendiente = Math.max(0, c.valor_cuota - pagado);
+      cobroPorPrestamo.set(c.id_prestamo, (cobroPorPrestamo.get(c.id_prestamo) ?? 0) + pendiente);
+      return sum + pendiente;
     }, 0);
   }
 
   // 3. Ganancia total: suma de a_interes + a_mora de pagos, más comisiones
   const { data: pagoData, error: errPago } = await supabase
     .from('pago')
-    .select('a_interes, a_mora');
+    .select('id_prestamo, a_interes, a_mora');
 
   if (errPago) throw new Error(`Error al obtener pagos: ${errPago.message}`);
 
   const { data: comisionData, error: errComision } = await supabase
     .from('prestamo')
-    .select('comision')
-    .eq('comision_modo', 'descontada_desembolso')
+    .select('id_prestamo, id_cliente, comision')
+    .eq('comision_modo', 'descontada')
     .not('comision', 'is', null);
 
   if (errComision) throw new Error(`Error comisiones: ${errComision.message}`);
 
-  let gananciaTotal = (pagoData ?? []).reduce(
-    (sum: number, p: any) => sum + (p.a_interes ?? 0) + (p.a_mora ?? 0),
-    0
-  );
-  gananciaTotal += (comisionData ?? []).reduce(
-    (sum: number, p: any) => sum + (p.comision ?? 0),
-    0
-  );
+  const [ { data: prestamosDesglose, error: errPrestamosDesglose }, { data: clientesDesglose, error: errClientesDesglose } ] = await Promise.all([
+    supabase.from('prestamo').select('id_prestamo, id_cliente').not('id_prestamo', 'is', null),
+    supabase.from('cliente').select('id_cliente, nombre'),
+  ]);
+  if (errPrestamosDesglose) throw new Error(`Error al obtener préstamos para el desglose: ${errPrestamosDesglose.message}`);
+  if (errClientesDesglose) throw new Error(`Error al obtener clientes para el desglose: ${errClientesDesglose.message}`);
+
+  const clientePorPrestamo = new Map((prestamosDesglose ?? []).map(p => [p.id_prestamo, p.id_cliente]));
+  const nombrePorCliente = new Map((clientesDesglose ?? []).map(c => [c.id_cliente, c.nombre]));
+  const gananciaPorCliente = new Map<string, number>();
+  for (const p of pagoData ?? []) {
+    const idCliente = clientePorPrestamo.get(p.id_prestamo);
+    if (idCliente == null) continue;
+    gananciaPorCliente.set(idCliente, (gananciaPorCliente.get(idCliente) ?? 0) + (p.a_interes ?? 0) + (p.a_mora ?? 0));
+  }
+  for (const p of comisionData ?? []) {
+    if (p.id_cliente == null) continue;
+    gananciaPorCliente.set(p.id_cliente, (gananciaPorCliente.get(p.id_cliente) ?? 0) + (p.comision ?? 0));
+  }
+  const aDesglose = (montos: Map<any, number>) => Array.from(montos, ([id, monto]) => ({
+    nombre: nombrePorCliente.get(id) ?? 'Cliente desconocido',
+    monto,
+  })).filter(item => item.monto > 0).sort((a, b) => b.monto - a.monto);
+  const desgloseGanancia = aDesglose(gananciaPorCliente);
+  const desgloseCobroHoy = aDesglose(new Map(Array.from(cobroPorPrestamo, ([idPrestamo, monto]) => [clientePorPrestamo.get(idPrestamo), monto] as const)
+    .reduce((map, [idCliente, monto]) => {
+      if (idCliente != null) map.set(idCliente, (map.get(idCliente) ?? 0) + monto);
+      return map;
+    }, new Map<any, number>())));
+  const gananciaTotal = desgloseGanancia.reduce((sum, item) => sum + item.monto, 0);
 
   // 4. Clientes atrasados (v_cuota_atrasada + join manual a prestamo)
   // v_cuota_atrasada tiene id_prestamo, numero_cuota, fecha_vencimiento, valor_cuota, dias_atraso
@@ -144,6 +171,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     gananciaTotal,
     cobroHoy,
     clientesAtrasadosCount,
+    desgloseGanancia,
+    desgloseCobroHoy,
   };
 }
 

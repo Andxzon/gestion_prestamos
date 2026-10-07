@@ -22,6 +22,7 @@ interface CardConfig {
   valor: string;
   Icono: React.FC<{ size?: number; strokeWidth?: number }>;
   colorClass: string;
+  desglose?: { nombre: string; monto: number }[];
 }
 
 const Inicio: React.FC = () => {
@@ -93,12 +94,14 @@ const Inicio: React.FC = () => {
       valor: formatCurrency(stats.gananciaTotal),
       Icono: TrendingUp,
       colorClass: 'card--verde',
+      desglose: stats.desgloseGanancia,
     },
     {
       titulo: 'Cobro para Hoy',
       valor: formatCurrency(stats.cobroHoy),
       Icono: CalendarClock,
       colorClass: 'card--ambar',
+      desglose: stats.desgloseCobroHoy,
     },
     {
       titulo: 'Clientes Atrasados',
@@ -126,7 +129,12 @@ const Inicio: React.FC = () => {
         {/* Tarjetas */}
         <div className="dashboard-cards">
           {cards.map((card) => (
-            <div key={card.titulo} className={`dashboard-card ${card.colorClass}`}>
+            <div
+              key={card.titulo}
+              className={`dashboard-card ${card.colorClass}${card.desglose ? ' dashboard-card--con-tooltip' : ''}`}
+              tabIndex={card.desglose ? 0 : undefined}
+              aria-describedby={card.desglose ? `tooltip-${card.titulo.replaceAll(' ', '-')}` : undefined}
+            >
               <div className="card-icon-wrap">
                 <card.Icono size={22} strokeWidth={1.8} />
               </div>
@@ -134,6 +142,26 @@ const Inicio: React.FC = () => {
                 <span className="card-title">{card.titulo}</span>
                 <span className="card-value">{card.valor}</span>
               </div>
+              {card.desglose && (
+                <div className="card-tooltip" id={`tooltip-${card.titulo.replaceAll(' ', '-')}`} role="tooltip">
+                  <strong>{card.titulo === 'Ganancia Total' ? 'Ganancia acumulada por cliente' : 'Saldo vencido por cobrar'}</strong>
+                  {card.desglose.length === 0 ? (
+                    <span className="card-tooltip-vacio">Sin valores para mostrar</span>
+                  ) : (
+                    <ul>
+                      {card.desglose.map((item, index) => (
+                        <li key={`${item.nombre}-${index}`}>
+                          <span>{item.nombre}</span>
+                          <b>{formatCurrency(item.monto)}</b>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {card.desglose.length > 0 && (
+                    <div className="card-tooltip-total"><span>Total</span><b>{card.valor}</b></div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
