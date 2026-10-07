@@ -136,6 +136,73 @@
   margin-top: 4px;
 }
 
+/* El modal de pago mantiene sus acciones visibles en ventanas bajas. */
+.pago-overlay {
+  align-items: center;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.modal-formulario-pago {
+  max-height: calc(100dvh - 32px);
+  min-height: 0;
+}
+
+.modal-formulario-pago .modal-header,
+.modal-formulario-pago .modal-pie {
+  flex: 0 0 auto;
+}
+
+.modal-formulario-pago .modal-cuerpo {
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+
+@media (max-height: 700px) {
+  .pago-overlay {
+    padding-block: 8px;
+  }
+
+  .modal-formulario-pago {
+    max-height: calc(100dvh - 16px);
+  }
+
+  .modal-formulario-pago .modal-header {
+    padding-block: 12px;
+  }
+
+  .modal-formulario-pago .modal-cuerpo {
+    padding: 12px 20px;
+    gap: 12px;
+  }
+
+  .modal-formulario-pago .modal-pie {
+    padding: 12px 20px;
+  }
+}
+
+@media (max-height: 500px) {
+  .pago-overlay {
+    padding-block: 4px;
+  }
+
+  .modal-formulario-pago {
+    max-height: calc(100dvh - 8px);
+  }
+
+  .modal-formulario-pago .modal-header {
+    padding-block: 8px;
+  }
+
+  .modal-formulario-pago .modal-cuerpo {
+    padding-block: 8px;
+  }
+
+  .modal-formulario-pago .modal-pie {
+    padding-block: 8px;
+  }
+}
+
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 600px) {
   .cobro-card {

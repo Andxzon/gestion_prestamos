@@ -325,8 +325,8 @@ const Cobros: React.FC = () => {
 
       {/* Modal de Pago */}
       {modalVisible && cobroSeleccionado && (
-        <div className="overlay">
-          <div className="modal-formulario" style={{ maxWidth: '400px' }}>
+        <div className="overlay pago-overlay">
+          <div className="modal-formulario modal-formulario-pago" style={{ maxWidth: '400px' }}>
             <div className="modal-header">
               <h2 className="modal-titulo">Registrar Pago</h2>
               <button className="modal-cerrar" onClick={cerrarModal} disabled={procesandoPago}><X size={18} /></button>
